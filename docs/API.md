@@ -12,10 +12,21 @@ Keep this file in sync with `backend/src/CashCoach.Api/Contracts/` and `frontend
 `GET /health` returns `200 { "status": "ok", "ai": "ok" | "degraded" }`
 
 ## Settings
-`GET /settings` · `PUT /settings`
+`GET /settings`
 ```json
-{ "language": "pl", "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1840.55" }
+{
+  "language": "pl",
+  "payday": 10,
+  "safetyBuffer": "300.00",
+  "currentBalance": "1601.52",
+  "onboarded": true,
+  "availableMonths": ["2026-06", "2026-07", "2026-08"]
+}
 ```
+`PUT /settings` takes any subset of `language`, `payday`, `safetyBuffer`, `currentBalance` and returns the full settings. `onboarded` and `availableMonths` are read-only; they become set after an import. The frontend's route guard sends users with `onboarded: false` to onboarding.
+
+## Data
+`DELETE /data` deletes all transactions, goals, rules and settings. Returns `204`.
 
 ## Transactions
 
@@ -32,11 +43,15 @@ Keep this file in sync with `backend/src/CashCoach.Api/Contracts/` and `frontend
   "needsReview": 4,
   "from": "2026-06-01",
   "to": "2026-08-31",
-  "detectedBalance": "1840.55"
+  "detectedBalance": "1601.52"
 }
 ```
 
-### `GET /transactions?from=&to=&category=&merchant=&needsReview=`
+### `POST /transactions/import/demo`
+No body. Loads the synthetic demo data set (same response as `/transactions/import`, with `"bank": "demo"`). Used by "Try it with demo data" on onboarding.
+
+### `GET /transactions?from=&to=&category=&merchant=&needsReview=&ids=`
+`ids` is a comma-separated list of transaction IDs; the Evidence drawer uses it to load the transactions behind a claim.
 ```json
 {
   "items": [
@@ -71,10 +86,23 @@ If `applyToMerchant` is true, a user rule is created and all transactions from t
   "month": "2026-08",
   "income": "3200.00",
   "expenses": "-2875.40",
+  "saved": "324.60",
+  "safeToSpend": "940.55",
+  "safeToSpendEvidence": {
+    "transactionIds": ["t_s05", "…"],
+    "figures": [
+      { "label": "Saldo konta", "amount": "1601.52" },
+      { "label": "Rachunki przed wypłatą", "amount": "-360.97" },
+      { "label": "Poduszka bezpieczeństwa", "amount": "-300.00" }
+    ],
+    "calculation": "1601.52 − 360.97 − 300.00"
+  },
+  "payPeriod": { "start": "2026-08-10", "end": "2026-09-10", "daysLeft": 12 },
+  "expensesChangePct": 9,
   "byCategory": [{ "category": "food_delivery", "amount": "-412.30", "changePct": 34.0 }],
-  "recurring": [{ "merchant": "Spotify", "amount": "-23.99", "period": "monthly", "nextDate": "2026-09-05" }],
+  "recurring": [{ "merchant": "Spotify", "amount": "-23.99", "period": "monthly", "nextDate": "2026-09-05", "transactionIds": ["t_s01"] }],
   "narrative": {
-    "headline": "Sierpień: wydałaś/eś 2 875 zł, o 9% więcej niż w lipcu.",
+    "headline": "Sierpień: wydatki 2 875,40 zł — o 9% więcej niż w lipcu.",
     "bullets": [
       { "text": "Dostawy jedzenia: 412,30 zł (14 zamówień).", "factKeys": ["cat.food_delivery.month"], "transactionIds": ["t_0192", "…"] }
     ],
@@ -113,7 +141,7 @@ Returns `204`. The suggestion is hidden from future lists.
   "price": "1200.00",
   "date": "2026-09-20",
   "installments": null,
-  "assumptions": { "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1840.55" }
+  "assumptions": { "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1601.52" }
 }
 ```
 `assumptions` is optional and falls back to the settings. `installments`: `{ "count": 3, "monthlyAmount": "400.00" }`.
@@ -123,17 +151,18 @@ Response:
 {
   "verdict": "yellow",
   "safeToSpend": "940.55",
+  "leftAfter": null,
   "shortfall": "259.45",
   "breakdown": [
-    { "label": "Current balance", "amount": "1840.55" },
-    { "label": "Upcoming bills before payday (rent share, Spotify, phone)", "amount": "-600.00", "transactionIds": ["…"] },
+    { "label": "Current balance", "amount": "1601.52" },
+    { "label": "Upcoming bills before payday (CityFit, Play, Netflix…)", "amount": "-360.97", "transactionIds": ["…"] },
     { "label": "Safety buffer", "amount": "-300.00" }
   ],
-  "assumptions": { "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1840.55" },
+  "assumptions": { "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1601.52" },
   "explanation": { "text": "…", "tips": ["…"], "aiGenerated": true, "factCheck": "passed" }
 }
 ```
-Verdict rules (deterministic): `green` if price ≤ safeToSpend · `yellow` if price ≤ safeToSpend + buffer · `red` otherwise.
+Verdict rules (deterministic): `green` if price ≤ safeToSpend · `yellow` if price ≤ safeToSpend + buffer · `red` otherwise. `leftAfter` = safeToSpend − price when that's ≥ 0, otherwise `null` (then `shortfall` is set). The frontend never subtracts amounts itself.
 
 ## Chat
 
@@ -149,6 +178,71 @@ event: tool       data: {"name":"get_transactions","input":{…}}
 event: evidence   data: {"transactionIds":["…"],"figures":[{"label":"Bolt, 08.2026","amount":"-186.00"}]}
 event: done       data: {"factCheck":"passed"}
 event: error      data: {"message":"…"}
+```
+
+## Wrapped
+
+### `GET /wrapped/months`
+```json
+[{ "month": "2026-08", "isNew": true }, { "month": "2026-07", "isNew": false }]
+```
+Newest first.
+
+### `GET /wrapped?month=2026-08`
+```json
+{
+  "month": "2026-08",
+  "totalSpent": "2875.40",
+  "changePct": 9,
+  "transactionCount": 55,
+  "topMerchant": { "name": "Glovo", "count": 14, "amount": "412.30", "evidence": { "transactionIds": ["t_g01", "…"] } },
+  "topCategory": { "category": "rent_bills", "amount": "1135.00", "sharePct": 39 },
+  "biggestChange": { "category": "restaurants_cafes", "from": "98.00", "to": "161.00", "changePct": 64 },
+  "cheapestWeekday": "tuesday",
+  "potentialSavings": "308.99",
+  "personality": { "emoji": "🌙", "title": "Weekendowy Smakosz", "description": "…", "aiGenerated": true },
+  "captions": { "totalSpent": "…", "topMerchant": "…", "biggestChange": "…" }
+}
+```
+All numbers are computed. `personality` and `captions` are AI-written (fact-checked like other AI text). `biggestChange` may be `null`.
+
+## Goals
+
+### `GET /goals`
+```json
+[
+  {
+    "id": "g1",
+    "name": "Koncert w Gdańsku",
+    "emoji": "🎸",
+    "target": "1200.00",
+    "saved": "540.00",
+    "deadline": "2026-09-20",
+    "requiredPerWeek": "210.00",
+    "status": "behind",
+    "shortBy": "189.00",
+    "aiTip": { "text": "…", "aiGenerated": true, "accepted": false }
+  }
+]
+```
+`status`: `on_track` | `behind` | `done`. `shortBy` is set only when `behind`. `aiTip` may be `null`.
+
+### `POST /goals` · `PUT /goals/{id}` · `DELETE /goals/{id}`
+Body for POST/PUT: `{ "name", "emoji", "target", "saved", "deadline" }`. PUT also accepts `{ "tipAccepted": true }`. Both return the computed goal (shape above). DELETE returns `204`.
+
+### `POST /goals/preview`
+Live calculation while the user fills in the goal form; nothing is saved.
+```json
+{ "target": "1200.00", "saved": "0.00", "deadline": "2026-09-20" }
+```
+Response:
+```json
+{
+  "requiredPerWeek": "357.14",
+  "verdict": "red",
+  "plan": [{ "savingId": "s_delivery", "title": "Gotuj 2× w tygodniu zamiast Glovo", "monthlyImpact": "160.00" }],
+  "aiText": "…"
+}
 ```
 
 ## Categories (enum)

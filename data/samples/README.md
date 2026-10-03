@@ -18,4 +18,4 @@ Check the exact column layout against a real export from your own account, and c
 - Transport: Bolt, MPK Kraków ticket
 - A few BLIK transfers to people, one Allegro purchase, one PayPo installment
 - 3–5 deliberately unusual merchant names (for AI categorization and the review queue)
-- Closing balance of about 1,840.55 zł
+- Closing balance of 1,601.52 zł (bills before payday 360.97 zł, so safe-to-spend is 940.55 zł)

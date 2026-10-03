@@ -1,0 +1,113 @@
+/* Goals */
+
+.goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.goal-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.goal-card__emoji {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-soft);
+  font-size: 1.5rem;
+}
+
+.goal-card__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
+  padding-top: var(--space-2);
+}
+
+.goal-card__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.goal-card__numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.goal-card__amount {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
+}
+
+.goal-card .ai-text {
+  font-size: var(--text-sm);
+}
+
+/* Suggested goal (dashed) */
+.goal-suggest {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-5);
+  text-align: start;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  transition: border-color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
+}
+
+.goal-suggest:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+/* Emoji picker */
+.emoji-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.emoji-picker button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.35rem;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  background-color: var(--color-surface-sunken);
+}
+
+.emoji-picker button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.goal-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+}
+
+.goal-preview__needs {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
+}
