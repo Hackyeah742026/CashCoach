@@ -14,7 +14,8 @@ React 18+, TypeScript (strict), Vite, Tailwind CSS, Recharts (charts), TanStack 
   - `Afford`: "Can I afford this?"
   - `Chat`
 - `src/components/`: presentational components. `EvidenceDrawer` is shared: any AI claim must be able to open it.
-- `src/styles/theme.css`: design tokens (CSS variables) for colors, radius and spacing, plus light and dark mode.
+- `src/index.css`: reset, design tokens (CSS variables) for color, type, spacing, radius, shadow and motion, light and dark themes, global element styles, and shared utilities (`.card`, `.btn`, `.money`, `.badge`, `.ai-text`, `.skeleton`). Components use `var(--token)`, never raw hex values.
+- `docs/`: frontend-only plans. **Read `docs/DESIGN.md` before building any UI.** Put new frontend plans there, not in the root `docs/`.
 
 ## UX rules (Design counts for 20% of the score)
 - Mobile-first. The target user is 18–26 and on a phone. It has to look good at 375px wide.
