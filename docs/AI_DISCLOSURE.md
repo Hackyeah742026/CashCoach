@@ -34,8 +34,9 @@ The team reviewed all AI-assisted code and can explain and defend every part of 
 | React | UI | MIT |
 | Vite | Build tool | MIT |
 | TypeScript | Language | Apache-2.0 |
-| Tailwind CSS | Styling | MIT |
-| Recharts | Charts | MIT |
+| lucide-react | Icons | ISC |
+| clsx | Class names | MIT |
+| html-to-image | Wrapped "Share" → PNG | MIT |
 | TanStack Query | Server state | MIT |
 | React Router | Routing | MIT |
 | _add as installed_ | | |

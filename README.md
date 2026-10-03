@@ -63,7 +63,7 @@ Full description: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · AI pipeline:
 
 - **Backend:** .NET (ASP.NET Core minimal APIs), EF Core + SQLite, xUnit
 - **AI:** Anthropic Claude API via the official `Anthropic` NuGet SDK. Tool use, structured outputs, streaming.
-- **Frontend:** React + TypeScript (Vite), Tailwind CSS, Recharts, TanStack Query
+- **Frontend:** React + TypeScript (Vite), TanStack Query, React Router, plain CSS design tokens, SVG charts
 
 ## Getting started
 

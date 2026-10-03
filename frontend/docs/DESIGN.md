@@ -59,19 +59,22 @@ Also handled: phone landscape (slimmer bars, icon-only tabs), iPhone notch and h
 | `.hide-phone`, `.hide-tablet`, `.hide-desktop`, `.phone-only` | Visibility |
 
 ### Per screen
-- **Dashboard:** `.grid-stats` (income, expenses, saved, safe-to-spend) → `.split` (AI insight + chart | recurring + savings) → savings in `.grid-auto`.
-- **Afford:** `.split--even`: form on the left, verdict on the right and sticky on laptop. Stacked on phone (verdict below the form).
+- **Home:** `.grid-stats` (income, expenses, saved, savings found) → `.split` (AI insight + chart | quick afford + recurring + savings). The Afford result opens in a `.sheet`.
+- **Wrapped:** month tiles in `.grid-auto`. The story player is a full-screen overlay; on desktop the card is centered at phone size.
 - **Chat:** `.container--narrow`, input pinned above the tab bar on phone.
+- **Goals:** goal cards in `.grid-auto`. Create/edit in a `.sheet`.
 - **Onboarding:** `.container--narrow`, centered card, no navigation.
 
 Test at 375, 768, 1280 and 1920 px widths before demoing.
 
 ## Key screens
-1. **Onboarding:** 3 short steps (language → payday & balance → upload CSV) with progress dots and a big drop zone.
-2. **Dashboard:** greeting and month switcher → AI headline card (✨) → donut chart by category → recurring payments list → savings cards.
-3. **Afford:** single form (what, how much, when, installments?) → large verdict card (🟢/🟡/🔴 + word) → breakdown table → editable assumptions.
-4. **Chat:** assistant bubbles in violet tint, user bubbles in navy, evidence chips under answers.
-5. **Evidence drawer:** bottom sheet on mobile, side panel on desktop. Lists transactions and the formula.
+Tabs: **Home · Wrapped · Chat · Goals**, plus Onboarding and Settings. Low-fi sketches are in [SCREENS.md](SCREENS.md); the build order is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+1. **Home:** safe-to-spend hero → stats → AI insight (✨) → "Can I afford…?" (verdict sheet) → category donut → recurring → savings.
+2. **Wrapped:** the monthly recap as story cards, like Spotify Wrapped: total, top merchant, biggest change, AI "money personality", shareable.
+3. **Chat:** assistant bubbles in violet tint, user bubbles in navy, evidence chips under answers.
+4. **Goals:** savings goals with a progress ring, required pace, status, and an AI catch-up tip.
+5. **Onboarding:** 3 short steps (language → payday & balance → upload CSV).
+6. **Evidence drawer:** bottom sheet on mobile, side panel on desktop. Lists transactions and the formula.
 
 ## Components (shared look)
 Button (primary / secondary / ghost), Card, Badge (AI, category, verdict), Money (formatted, colored by sign), Input / Select, BottomSheet, Skeleton loader, Toast.
