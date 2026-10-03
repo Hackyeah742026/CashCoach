@@ -441,15 +441,6 @@
   color: var(--color-text-subtle);
 }
 
-.calc {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface-sunken);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  overflow-wrap: anywhere;
-}
-
 /* Empty / error states */
 .empty-state {
   display: flex;

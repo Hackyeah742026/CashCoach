@@ -54,10 +54,10 @@ public class GoalEndpointTests
         await using var factory = new ApiFactory();
         var client = await factory.CreateUserClientAsync("bnpl_heavy");
 
-        var preview = await (await client.PostAsJsonAsync("/api/goals/preview", new { target = 3000m, deadline = "2027-03-30" })).ReadAsync<GoalPreviewResponse>();
+        var preview = await (await client.PostAsJsonAsync("/api/goals/preview", new { target = 12000m, deadline = "2027-03-30" })).ReadAsync<GoalPreviewResponse>();
 
-        preview.RequiredPerMonth.Should().Be(500m, "3000 zł in 6 monthly deposits");
-        preview.Verdict.Should().NotBe(Verdict.Green, "the persona spends more than it earns");
+        preview.RequiredPerMonth.Should().Be(2000m, "12000 zł in 6 monthly deposits");
+        preview.Verdict.Should().NotBe(Verdict.Green, "2000 zł a month is more than the persona saves");
         preview.Plan.Should().NotBeEmpty();
     }
 }

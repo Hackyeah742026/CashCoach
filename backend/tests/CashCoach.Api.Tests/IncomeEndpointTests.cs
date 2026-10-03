@@ -25,7 +25,7 @@ public class IncomeEndpointTests
         detection.Confirmed.Should().BeNull();
         if (persona == "student")
         {
-            detection.Others.Should().ContainSingle(o => o.Source == "Kieszonkowe" && o.Amount == 900m);
+            detection.Others.Should().ContainSingle(o => o.Source == "Kieszonkowe" && o.Amount == 1300m);
         }
     }
 

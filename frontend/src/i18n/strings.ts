@@ -93,11 +93,14 @@ const plStrings = {
   },
   evidence: {
     title: 'Skąd to wiem?',
-    calculation: 'Obliczenie',
     figures: 'Liczby',
     transactions: (n: number) => `${n} ${pl(n, 'transakcja', 'transakcje', 'transakcji')}`,
     empty: 'Brak powiązanych transakcji.',
-    note: 'Kwoty liczy kod, nie AI. AI tylko je opisuje.',
+    single: (merchant: string, date: string) => `Płatność: ${merchant}, ${date}.`,
+    range: (from: string, to: string) => (from === to ? `Wszystkie z ${from}` : `Od ${from} do ${to}`),
+    allAt: (merchant: string) => `wszystkie: ${merchant}`,
+    mostOften: (merchant: string, n: number) => `najczęściej ${merchant} (${n}×)`,
+    total: 'Łączna kwota',
   },
   wrapped: {
     title: 'Wrapped',
@@ -371,11 +374,14 @@ const enStrings: Dictionary = {
   },
   evidence: {
     title: 'How do I know?',
-    calculation: 'Calculation',
     figures: 'Figures',
     transactions: (n: number) => `${n} ${n === 1 ? 'transaction' : 'transactions'}`,
     empty: 'No linked transactions.',
-    note: 'Amounts are calculated by code, not AI. AI only explains them.',
+    single: (merchant: string, date: string) => `Payment at ${merchant} on ${date}.`,
+    range: (from: string, to: string) => (from === to ? `All on ${from}` : `From ${from} to ${to}`),
+    allAt: (merchant: string) => `all at ${merchant}`,
+    mostOften: (merchant: string, n: number) => `most often at ${merchant} (${n}×)`,
+    total: 'Total amount',
   },
   wrapped: {
     title: 'Wrapped',

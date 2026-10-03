@@ -75,7 +75,7 @@ public static class SyntheticPersonas
         Persona.Student,
         Seed: 2026_01,
         Salary: Constant("Stypendium", "PRZELEW PRZYCHODZACY STYPENDIUM SOCJALNE", 165_000, 10),
-        OtherIncome: [Constant("Kieszonkowe", "PRZELEW PRZYCHODZACY KIESZONKOWE", 90_000, 1)],
+        OtherIncome: [Constant("Kieszonkowe", "PRZELEW PRZYCHODZACY KIESZONKOWE", 130_000, 1)],
         Rent: Constant("Czynsz", "PRZELEW CZYNSZ POKOJ", -110_000, 1),
         Bills: [],
         Subscriptions:
@@ -88,10 +88,10 @@ public static class SyntheticPersonas
         BnplPlans: [new("PayPo", "Modivo", "PAYPO*MODIVO", 8_975, 4, 1, new DateOnly(2026, 8, 3))],
         Noise:
         [
-            (Noise.Zabka, 14), (Noise.Biedronka, 10), (Noise.Lidl, 6), (Noise.Bolt, 6), (Noise.Uber, 2),
-            (Noise.Pyszne, 6), (Noise.Glovo, 5), (Noise.Wolt, 3), (Noise.Allegro, 3), (Noise.Rossmann, 3),
-            (Noise.McDonalds, 4), (Noise.Starbucks, 3), (Noise.Kawiarnia, 4), (Noise.Jakdojade, 6),
-            (Noise.CinemaCity, 1.5f), (Noise.Steam, 1), (Noise.PhoneTransfer, 3), (Noise.Hebe, 1),
+            (Noise.Zabka, 16), (Noise.Biedronka, 5), (Noise.Lidl, 3), (Noise.Bolt, 3), (Noise.Uber, 1),
+            (Noise.Pyszne, 3), (Noise.Glovo, 3), (Noise.Wolt, 1), (Noise.Allegro, 1), (Noise.Rossmann, 2),
+            (Noise.McDonalds, 3), (Noise.Starbucks, 3), (Noise.Kawiarnia, 6), (Noise.Jakdojade, 12),
+            (Noise.CinemaCity, 1), (Noise.Steam, 0.5f), (Noise.PhoneTransfer, 2), (Noise.Hebe, 1),
             (Noise.Apteka, 1), (Noise.Unknown, 1),
         ]);
 
@@ -116,7 +116,7 @@ public static class SyntheticPersonas
             (Noise.Pyszne, 5), (Noise.Glovo, 5), (Noise.Wolt, 5), (Noise.Allegro, 4), (Noise.Rossmann, 3),
             (Noise.McDonalds, 3), (Noise.Starbucks, 6), (Noise.Kawiarnia, 3), (Noise.Orlen, 2),
             (Noise.CinemaCity, 1.5f), (Noise.Empik, 1.5f), (Noise.PhoneTransfer, 3), (Noise.Hebe, 1),
-            (Noise.Apteka, 1), (Noise.Unknown, 1),
+            (Noise.Apteka, 1), (Noise.Unknown, 2),
         ]);
 
     public static readonly SyntheticPersona BnplHeavy = new(
@@ -124,7 +124,7 @@ public static class SyntheticPersonas
         Seed: 2026_03,
         Salary: new("Wynagrodzenie", (_, date) => SalaryTitle(date, "SKLEP24 SP Z O O"), 430_000, 15),
         OtherIncome: [],
-        Rent: Constant("Czynsz", "PRZELEW CZYNSZ WYNAJEM", -160_000, 1),
+        Rent: Constant("Czynsz", "PRZELEW CZYNSZ WYNAJEM", -135_000, 1),
         Bills: [],
         Subscriptions:
         [
@@ -140,10 +140,10 @@ public static class SyntheticPersonas
         ],
         Noise:
         [
-            (Noise.Zabka, 10), (Noise.Biedronka, 6), (Noise.Lidl, 4), (Noise.Bolt, 5), (Noise.Uber, 3),
-            (Noise.Pyszne, 6), (Noise.Glovo, 6), (Noise.Wolt, 4), (Noise.Allegro, 6), (Noise.Rossmann, 3),
-            (Noise.McDonalds, 3), (Noise.Starbucks, 2), (Noise.Kawiarnia, 2), (Noise.Shein, 4), (Noise.Temu, 4),
-            (Noise.Hebe, 3), (Noise.Empik, 2), (Noise.PhoneTransfer, 2), (Noise.Apteka, 1), (Noise.Unknown, 1),
+            (Noise.Zabka, 16), (Noise.Biedronka, 4), (Noise.Lidl, 3), (Noise.Bolt, 4), (Noise.Uber, 2),
+            (Noise.Pyszne, 4), (Noise.Glovo, 4), (Noise.Wolt, 2), (Noise.Allegro, 1.5f), (Noise.Rossmann, 2),
+            (Noise.McDonalds, 4), (Noise.Starbucks, 3), (Noise.Kawiarnia, 4), (Noise.Shein, 1), (Noise.Temu, 1.5f),
+            (Noise.Hebe, 2), (Noise.Empik, 1), (Noise.PhoneTransfer, 1), (Noise.Apteka, 1), (Noise.Unknown, 1),
         ]);
 
     public static IReadOnlyList<SyntheticPersona> All { get; } = [Student, FirstJob, BnplHeavy];

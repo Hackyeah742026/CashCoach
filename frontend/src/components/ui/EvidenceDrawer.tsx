@@ -1,5 +1,6 @@
 import { useTransactionsByIds } from '../../hooks/useTransactions'
 import { useLanguage, useT } from '../../i18n/context'
+import type { Dictionary } from '../../i18n/strings'
 import { categoryMeta } from '../../lib/categories'
 import { formatDate } from '../../lib/format'
 import { AiBadge } from './AiText'
@@ -7,10 +8,26 @@ import type { EvidenceRequest } from './evidenceContext'
 import { MoneyText } from './MoneyText'
 import { Sheet } from './Sheet'
 import { Skeleton } from './Skeleton'
+import type { Language, Transaction } from '../../types'
 
 interface EvidenceDrawerProps {
   request: EvidenceRequest | null
   onClose: () => void
+}
+
+/** One line about the linked transactions: when they happened and where most of them went. */
+function describe(items: Transaction[], t: Dictionary, lang: Language) {
+  if (items.length === 0) return null
+  if (items.length === 1) return t.evidence.single(items[0].merchant, formatDate(items[0].date, lang))
+
+  const dates = items.map((tx) => tx.date).sort()
+  const range = t.evidence.range(formatDate(dates[0], lang), formatDate(dates[dates.length - 1], lang))
+  const counts = new Map<string, number>()
+  for (const tx of items) counts.set(tx.merchant, (counts.get(tx.merchant) ?? 0) + 1)
+  const [merchant, n] = [...counts].sort((a, b) => b[1] - a[1])[0]
+
+  if (counts.size === 1) return `${range}, ${t.evidence.allAt(merchant)}.`
+  return n > 1 ? `${range}, ${t.evidence.mostOften(merchant, n)}.` : `${range}.`
 }
 
 /** "How do I know?" — shows the transactions and calculation behind a number or AI claim. */
@@ -23,7 +40,7 @@ export function EvidenceDrawer({ request, onClose }: EvidenceDrawerProps) {
 
   return (
     <Sheet open={request !== null} onClose={onClose} title={request?.subject ?? t.evidence.title}>
-      <p className="text-sm text-muted">{t.evidence.note}</p>
+      {data && data.items.length > 0 && <p className="text-sm text-muted">{describe(data.items, t, lang)}</p>}
 
       {evidence?.figures && evidence.figures.length > 0 && (
         <section>
@@ -38,15 +55,6 @@ export function EvidenceDrawer({ request, onClose }: EvidenceDrawerProps) {
               </div>
             ))}
           </div>
-        </section>
-      )}
-
-      {evidence?.calculation && (
-        <section>
-          <h3 className="text-sm text-muted" style={{ marginBottom: 'var(--space-2)' }}>
-            {t.evidence.calculation}
-          </h3>
-          <div className="calc">{evidence.calculation}</div>
         </section>
       )}
 
@@ -89,7 +97,7 @@ export function EvidenceDrawer({ request, onClose }: EvidenceDrawerProps) {
             {data.count > 1 && (
               <div className="kv-list">
                 <div className="kv-list__row kv-list__row--total">
-                  <span>Σ</span>
+                  <span>{t.evidence.total}</span>
                   <MoneyText value={data.total} />
                 </div>
               </div>

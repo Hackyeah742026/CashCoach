@@ -6,9 +6,9 @@
 |---|---|---|
 | `synthetic_student.csv` | Ola, student | About 3 months, scholarship on the 10th, rent on the 1st |
 | `synthetic_first_job.csv` | Kuba, first job | Salary on the 28th, rent on the 1st |
-| `synthetic_bnpl_heavy.csv` | Maja, BNPL-heavy | Salary on the 15th, three instalment plans |
+| `synthetic_bnpl_heavy.csv` | Maja, BNPL-heavy | Salary on the 15th, three instalment plans; still earns more than she spends, but at her current pace runs out before payday |
 
-Format: `date;amount;description;currency`, UTF-8, `;` separator, Polish decimal comma. Each file has 150–250 rows from 2026-07-01 to 2026-09-30, including messy descriptions (`ZABKA Z5521 K.1 KRAKOW`, `KLARNA*ZALANDO RATA 2/4`), a Spotify + YouTube Music pair, and BNPL instalments.
+Format: `date;amount;description;currency`, UTF-8, `;` separator, Polish decimal comma. Each file has 100–250 rows from 2026-07-01 to 2026-09-30, including messy descriptions (`ZABKA Z5521 K.1 KRAKOW`, `KLARNA*ZALANDO RATA 2/4`), a Spotify + YouTube Music pair, and BNPL instalments.
 
 ## What the demo data must contain (to match `docs/DEMO_SCRIPT.md`)
 - Income: salary from the café on the 10th (about 2,400 zł) and a family transfer (800 zł)

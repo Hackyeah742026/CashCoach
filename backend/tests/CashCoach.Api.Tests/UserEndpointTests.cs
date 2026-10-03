@@ -32,7 +32,7 @@ public class UserEndpointTests
             AvailableMonths = new[] { "2026-07", "2026-08", "2026-09" },
         });
         var count = await factory.WithDbAsync(db => db.Transactions.CountAsync(t => t.UserId == profile.UserId));
-        count.Should().BeInRange(150, 250);
+        count.Should().BeInRange(100, 250);
     }
 
     [Fact]

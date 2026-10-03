@@ -6,8 +6,8 @@ namespace CashCoach.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    /// <summary>Bump when the model changes; an older database is recreated on startup.</summary>
-    public const int SchemaVersion = 3;
+    /// <summary>Bump when the model or the synthetic demo data changes; an older database is recreated on startup.</summary>
+    public const int SchemaVersion = 4;
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Transaction> Transactions => Set<Transaction>();

@@ -54,9 +54,12 @@ export function Goals() {
     <>
       <header className="page-header">
         <h1>{t.goals.title}</h1>
-        <button type="button" className="btn btn--primary" onClick={() => openNew()}>
-          <Plus size={18} aria-hidden /> {t.goals.new}
-        </button>
+        {/* Without goals the empty state has its own "new goal" button. */}
+        {!!goals?.length && (
+          <button type="button" className="btn btn--primary" onClick={() => openNew()}>
+            <Plus size={18} aria-hidden /> {t.goals.new}
+          </button>
+        )}
       </header>
 
       {isError && <ErrorState onRetry={() => refetch()} />}

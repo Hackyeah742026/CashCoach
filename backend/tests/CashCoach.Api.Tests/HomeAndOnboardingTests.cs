@@ -28,7 +28,7 @@ public class HomeAndOnboardingTests
         var import = await (await client.PostAsJsonAsync("/api/import/demo", new { persona = "first_job" })).ReadAsync<ImportResponse>();
         var me = await (await client.GetAsync("/api/me")).ReadAsync<UserProfileResponse>();
 
-        import.Imported.Should().BeInRange(150, 250);
+        import.Imported.Should().BeInRange(100, 250);
         me.HasData.Should().BeTrue();
         me.Payday.Should().Be(28, "the demo salary decides the payday");
         me.Balance.Should().Be(1500m, "a balance the user set is kept");
