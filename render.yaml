@@ -1,0 +1,19 @@
+# Render Blueprint: New → Blueprint → pick this repo. Free plan has no disk, so the SQLite demo DB resets on redeploy/spin-down.
+services:
+  - type: web
+    name: cashcoach-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        value: https://cash-coach-one.vercel.app
+      - key: Cors__AllowedOrigins__1
+        value: http://localhost:5173
