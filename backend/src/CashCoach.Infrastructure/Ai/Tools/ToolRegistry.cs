@@ -37,7 +37,7 @@ public sealed class ToolRegistry(SnapshotLoader loader, AnalyticsService analyti
 
     public static IReadOnlyList<LlmToolDefinition> Definitions { get; } =
     [
-        new("get_balance", "Current balance, safe-to-spend until payday, safety buffer and next payday.", """{"type":"object","properties":{}}"""),
+        new("get_balance", "Current balance, safe-to-spend until payday, safety buffer, next payday and confirmed monthly income.", """{"type":"object","properties":{}}"""),
         new("get_spending", "Spending totals for a period, optionally for one category or merchant. Defaults to the current month.",
             """{"type":"object","properties":{"month":{"type":"string","description":"YYYY-MM"},"from":{"type":"string","description":"YYYY-MM-DD"},"to":{"type":"string","description":"YYYY-MM-DD"},"category":{"type":"string","enum":[CATEGORIES]},"merchant":{"type":"string"}}}""".Replace("CATEGORIES", Categories)),
         new("get_upcoming_payments", "Bills, subscriptions, rent and BNPL instalments due before the next payday.", """{"type":"object","properties":{}}"""),
@@ -103,6 +103,7 @@ public sealed class ToolRegistry(SnapshotLoader loader, AnalyticsService analyti
                 bills_before_payday = Zl(f.FixedUpcomingGr),
                 next_payday = f.NextPayday,
                 days_left = f.DaysLeft,
+                monthly_income = s.SalaryGr is { } salary ? Zl(salary) : (decimal?)null,
             },
             f.UpcomingTransactionIds,
             ForecastFigures(f, language).Take(4).ToList());

@@ -41,10 +41,13 @@ No `X-User-Id`. Body `{ "name"?: "Ola", "language"?: "pl" | "en" }` → `201` wi
   "balance": 2100.00,
   "balance_is_estimate": false,
   "as_of": "2026-09-30",
-  "available_months": ["2026-07", "2026-08", "2026-09"]
+  "available_months": ["2026-07", "2026-08", "2026-09"],
+  "income": { "status": "confirmed", "day": 15, "day_rule": "fixed_day", "amount": 4300.00, "source": "Wynagrodzenie" }
 }
 ```
-`payday` is detected from the salary on import (user-editable). `balance` is the value set by the user; when unset it is estimated from the imported history (`balance_is_estimate: true`), because CSV exports carry no balance.
+`income.status` is `unknown` until the user answers (then `payday` is only a guess from the data), `confirmed` or `none` (no regular income: `payday` is `null` and forecasts run to the 1st of next month). `day_rule` is `fixed_day` or `last_working_day`. See `docs/INCOME_DETECTION.md`.
+
+`payday` is guessed from the data on import while the income is unconfirmed. `balance` is the value set by the user; when unset it is estimated from the imported history (`balance_is_estimate: true`), because CSV exports carry no balance.
 
 ### `PATCH /me`
 Any subset of `{ "name", "language": "pl"|"en", "payday": 1-31, "safety_buffer": 300.00, "balance": 1601.52 }`. Returns the profile. Errors: `invalid_name`, `invalid_language`, `invalid_payday`, `invalid_safety_buffer`, `invalid_balance`.
@@ -55,20 +58,39 @@ Body `{ "accepted": true, "scopes": ["transactions", "ai_coach"] }` → `{ "cons
 ### `GET /me/export`
 Downloads everything stored about the user as JSON (`Content-Disposition: attachment`): `user`, `transactions`, `recurring_groups`, `goals`, `challenges`, `chat_messages`, `merchant_rules`, `dismissals`. Amounts here are raw grosze (`amount_gr`).
 
+### `GET /income/detection`
+Regular incomes found in the user's transactions (one payment per month, day ±3 days, weekend shifts, amounts within ±25%).
+```json
+{
+  "guess": {
+    "source": "Wynagrodzenie", "kind": "salary", "day": 28, "day_rule": "fixed_day",
+    "amount": 5600.00, "amount_min": 5600.00, "amount_max": 5600.00, "months_seen": 3, "confidence": "high",
+    "evidence": { "transaction_ids": ["…"], "figures": [], "calculation": null }
+  },
+  "others": [],
+  "confirmed": null
+}
+```
+`kind`: `salary` · `stipend` · `other`. `confidence`: `high` · `medium` · `low`. `guess` is `null` when nothing regular was found.
+
+### `PUT /me/income`
+Body `{ "has_income": true, "day": 28, "day_rule": "fixed_day", "amount": 5600.00, "source": "Wynagrodzenie" }` (`day` is not needed with `last_working_day`) or `{ "has_income": false }`. Returns the profile. A confirmed income (or "none") is never overwritten by later imports. Errors: `invalid_has_income`, `invalid_day`, `invalid_day_rule`, `invalid_amount`.
+
 ### `DELETE /me`
 Deletes the user and all their data. `204`.
 
 ## Transactions
 
 ### `POST /import`
-Multipart field `file` (max 5 MB). CSV header `date;amount;description;currency`, `;` delimiter, decimal comma or dot, PLN only. Duplicate rows (same user, date, amount and description) are skipped. After the import, recurring payments are re-detected and `payday` is set from the salary if it was unknown.
+Multipart field `file` (max 5 MB). CSV header `date;amount;description;currency`, optionally with a `balance` (or `saldo`) column, `;` delimiter, decimal comma or dot, PLN only. With a balance column, the balance after the newest row becomes the user's balance (`detected_balance`). Duplicate rows (same user, date, amount and description) are skipped. After the import, recurring payments are re-detected and `payday` is set from the salary if it was unknown.
 ```json
 {
   "imported": 212,
   "skipped_duplicates": 0,
   "categorized": { "dictionary": 190, "fuzzy": 14, "llm": 4, "other": 4 },
   "recurring_found": { "subscriptions": 4, "bnpl": 1, "salary_day": 28 },
-  "period": { "from": "2026-07-01", "to": "2026-09-30" }
+  "period": { "from": "2026-07-01", "to": "2026-09-30" },
+  "detected_balance": null
 }
 ```
 Errors: `invalid_csv`, `file_too_large`.

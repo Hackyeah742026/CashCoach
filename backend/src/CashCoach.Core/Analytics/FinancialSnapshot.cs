@@ -7,6 +7,7 @@ namespace CashCoach.Core.Analytics;
 /// <param name="BalanceGr">Account balance at <paramref name="AsOf"/> in grosze.</param>
 /// <param name="Payday">Day of month the salary arrives, or <c>null</c> when unknown.</param>
 /// <param name="Recurring">Active recurring groups.</param>
+/// <param name="SalaryGr">Confirmed monthly income, when the user confirmed one.</param>
 public sealed record FinancialSnapshot(
     DateOnly AsOf,
     long BalanceGr,
@@ -14,7 +15,9 @@ public sealed record FinancialSnapshot(
     long SafetyBufferGr,
     IReadOnlyList<Transaction> Transactions,
     IReadOnlyList<RecurringGroup> Recurring,
-    IReadOnlyList<Goal> Goals)
+    IReadOnlyList<Goal> Goals,
+    PaydayRule PaydayRule = PaydayRule.FixedDay,
+    long? SalaryGr = null)
 {
     /// <summary>Expenses (negative amounts) in the inclusive range.</summary>
     public IEnumerable<Transaction> ExpensesBetween(DateOnly from, DateOnly to) =>

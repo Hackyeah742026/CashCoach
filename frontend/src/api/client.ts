@@ -13,6 +13,8 @@ import type {
   GoalPreview,
   GoalPreviewRequest,
   ImportResult,
+  IncomeAnswer,
+  IncomeDetection,
   Language,
   MonthKey,
   SavingsResponse,
@@ -29,6 +31,7 @@ import type {
   BGoalPreview,
   BHome,
   BImport,
+  BIncomeDetection,
   BOpportunities,
   BProfile,
   BPurchase,
@@ -130,6 +133,8 @@ const NEW_USER_SETTINGS: Settings = {
   payday: 10,
   safetyBuffer: '300.00',
   currentBalance: '0.00',
+  balanceIsEstimate: true,
+  income: { status: 'unknown', day: null, dayRule: 'fixed_day', amount: null, source: null },
   onboarded: false,
   availableMonths: [],
 }
@@ -159,6 +164,22 @@ export async function deleteAllData(): Promise<void> {
   if (USE_MOCKS) return mock.deleteAllData()
   if (getUserId()) await request<void>('/me', { method: 'DELETE' })
   clearSession()
+}
+
+// ---------------------------------------------------------------------------
+// Income (detected from the CSV, confirmed by the user)
+
+export async function getIncomeDetection(): Promise<IncomeDetection> {
+  if (USE_MOCKS) return mock.getIncomeDetection()
+  return adapt.toIncomeDetection(await request<BIncomeDetection>('/income/detection'))
+}
+
+export async function confirmIncome(answer: IncomeAnswer): Promise<Settings> {
+  if (USE_MOCKS) return mock.confirmIncome(answer)
+  const body = answer.hasIncome
+    ? { has_income: true, day: answer.day, day_rule: answer.dayRule, amount: Number(answer.amount), source: answer.source ?? undefined }
+    : { has_income: false }
+  return rememberProfile(await request<BProfile>('/me/income', { method: 'PUT', body: json(body) }))
 }
 
 // ---------------------------------------------------------------------------

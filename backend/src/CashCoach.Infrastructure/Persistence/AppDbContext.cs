@@ -7,7 +7,7 @@ namespace CashCoach.Infrastructure.Persistence;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     /// <summary>Bump when the model changes; an older database is recreated on startup.</summary>
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
@@ -24,6 +24,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         configurationBuilder.Properties<Channel>().HaveConversion<SnakeCaseEnumConverter<Channel>>();
         configurationBuilder.Properties<RecurringType>().HaveConversion<SnakeCaseEnumConverter<RecurringType>>();
         configurationBuilder.Properties<Persona>().HaveConversion<SnakeCaseEnumConverter<Persona>>();
+        configurationBuilder.Properties<IncomeStatus>().HaveConversion<SnakeCaseEnumConverter<IncomeStatus>>();
+        configurationBuilder.Properties<PaydayRule>().HaveConversion<SnakeCaseEnumConverter<PaydayRule>>();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -28,6 +28,34 @@ export interface BProfile {
   balance_is_estimate: boolean
   as_of: string | null
   available_months: string[]
+  income: BIncome
+}
+
+export interface BIncome {
+  status: 'unknown' | 'confirmed' | 'none'
+  day: number | null
+  day_rule: 'fixed_day' | 'last_working_day'
+  amount: number | null
+  source: string | null
+}
+
+export interface BIncomeCandidate {
+  source: string
+  kind: 'salary' | 'stipend' | 'other'
+  day: number
+  day_rule: 'fixed_day' | 'last_working_day'
+  amount: number
+  amount_min: number
+  amount_max: number
+  months_seen: number
+  confidence: 'high' | 'medium' | 'low'
+  evidence: BEvidence
+}
+
+export interface BIncomeDetection {
+  guess: BIncomeCandidate | null
+  others: BIncomeCandidate[]
+  confirmed: BIncome | null
 }
 
 export interface BImport {
@@ -36,6 +64,7 @@ export interface BImport {
   categorized: { dictionary: number; fuzzy: number; llm: number; other: number }
   recurring_found: { subscriptions: number; bnpl: number; salary_day: number | null }
   period: { from: string; to: string } | null
+  detected_balance: number | null
 }
 
 export interface BTransaction {

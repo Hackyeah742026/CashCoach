@@ -12,6 +12,7 @@ public sealed record DemoLoginRequest(string? Persona);
 /// <param name="BalanceIsEstimate">True when the user has not set a balance yet.</param>
 /// <param name="AsOf">Latest transaction date, the "today" the analytics use; <c>null</c> without data.</param>
 /// <param name="AvailableMonths">Months with data, oldest first, as <c>YYYY-MM</c>.</param>
+/// <param name="Income">The user's regular income: confirmed, "none", or still a guess (<c>unknown</c>).</param>
 public sealed record UserProfileResponse(
     Guid UserId,
     string Name,
@@ -24,7 +25,8 @@ public sealed record UserProfileResponse(
     decimal Balance,
     bool BalanceIsEstimate,
     DateOnly? AsOf,
-    IReadOnlyList<string> AvailableMonths)
+    IReadOnlyList<string> AvailableMonths,
+    IncomeDto Income)
 {
     public static UserProfileResponse From(UserProfile profile) => new(
         profile.User.Id,
@@ -38,8 +40,18 @@ public sealed record UserProfileResponse(
         Money.ToZloty(profile.BalanceGr),
         profile.User.BalanceGr is null,
         profile.AsOf,
-        profile.AvailableMonths.Select(month => $"{month:yyyy-MM}").ToList());
+        profile.AvailableMonths.Select(month => $"{month:yyyy-MM}").ToList(),
+        new IncomeDto(
+            profile.User.IncomeStatus,
+            profile.User.Payday,
+            profile.User.PaydayRule,
+            profile.User.SalaryGr is { } salary ? Money.ToZloty(salary) : null,
+            profile.User.IncomeSource));
 }
+
+/// <param name="Status"><c>unknown</c> (not answered; <paramref name="Day"/> is a guess), <c>confirmed</c> or <c>none</c>.</param>
+/// <param name="Amount">Confirmed monthly income in złoty.</param>
+public sealed record IncomeDto(IncomeStatus Status, int? Day, PaydayRule DayRule, decimal? Amount, string? Source);
 
 /// <param name="Language"><c>pl</c> or <c>en</c>; omit to keep the current one.</param>
 /// <param name="Payday">1 to 31.</param>

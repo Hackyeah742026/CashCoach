@@ -3,9 +3,10 @@ import { useState, type SyntheticEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { Field } from '../components/ui/Field'
 import { Segmented } from '../components/ui/Segmented'
-import { useChangeLanguage, useDeleteAllData, useSettings, useUpdateSettings } from '../hooks/useSettings'
+import { IncomeForm } from '../components/onboarding/IncomeForm'
+import { useChangeLanguage, useConfirmIncome, useDeleteAllData, useSettings, useUpdateSettings } from '../hooks/useSettings'
 import { useLanguage, useT } from '../i18n/context'
-import { inputToMoney, moneyToInput } from '../lib/format'
+import { formatMoney, inputToMoney, moneyToInput } from '../lib/format'
 import { applyTheme, getThemePreference, type ThemePreference } from '../lib/theme'
 import type { Language } from '../types'
 
@@ -55,7 +56,8 @@ export function Settings() {
           </div>
         </section>
 
-        <FinancesForm />
+        <IncomeCard />
+        <MoneyForm />
 
         <section className="card stack">
           <h2 style={{ fontSize: 'var(--text-lg)' }}>{t.settings.data}</h2>
@@ -83,41 +85,92 @@ export function Settings() {
   )
 }
 
-function FinancesForm() {
+function IncomeCard() {
+  const t = useT()
+  const { lang } = useLanguage()
+  const { data: settings } = useSettings()
+  const confirm = useConfirmIncome()
+  const [editing, setEditing] = useState(false)
+
+  if (!settings) return null
+  const income = settings.income
+  const day = income.dayRule === 'last_working_day' ? t.income.dayLast : t.income.dayFixed(income.day ?? settings.payday)
+  const summary =
+    income.status === 'none'
+      ? t.income.noneSummary
+      : income.status === 'confirmed' && income.amount
+        ? t.income.summary(formatMoney(income.amount, lang), day)
+        : t.income.unknownSummary
+
+  return (
+    <section className="card stack">
+      <h2 style={{ fontSize: 'var(--text-lg)' }}>{t.income.settingsTitle}</h2>
+      {editing ? (
+        <>
+          <IncomeForm
+            initial={{ day: income.day, dayRule: income.dayRule, amount: income.amount }}
+            source={income.source}
+            pending={confirm.isPending}
+            error={confirm.isError}
+            onSubmit={(answer) => confirm.mutate(answer, { onSuccess: () => setEditing(false) })}
+            onBack={() => setEditing(false)}
+          />
+          <button
+            type="button"
+            className="btn btn--ghost"
+            style={{ alignSelf: 'flex-start' }}
+            disabled={confirm.isPending}
+            onClick={() => confirm.mutate({ hasIncome: false }, { onSuccess: () => setEditing(false) })}
+          >
+            {t.income.noneSummary}
+          </button>
+        </>
+      ) : (
+        <div className="cluster" style={{ justifyContent: 'space-between' }}>
+          <span>
+            {summary}
+            {income.source && income.status === 'confirmed' && <span className="text-sm text-muted"> · {income.source}</span>}
+          </span>
+          <button type="button" className="btn btn--secondary" onClick={() => setEditing(true)}>
+            {t.income.edit}
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function MoneyForm() {
   const t = useT()
   const { data: settings } = useSettings()
   const update = useUpdateSettings()
-  const [edits, setEdits] = useState<{ payday?: string; buffer?: string; balance?: string }>({})
+  const [edits, setEdits] = useState<{ buffer?: string; balance?: string }>({})
 
   if (!settings) return null
 
-  const payday = edits.payday ?? String(settings.payday)
   const buffer = edits.buffer ?? moneyToInput(settings.safetyBuffer)
   const balance = edits.balance ?? moneyToInput(settings.currentBalance)
-  const paydayNum = Number(payday)
-  const valid = Number.isInteger(paydayNum) && paydayNum >= 1 && paydayNum <= 31 && inputToMoney(buffer) && inputToMoney(balance)
+  const valid = Boolean(inputToMoney(buffer) && inputToMoney(balance))
 
   function submit(e: SyntheticEvent) {
     e.preventDefault()
     const safetyBuffer = inputToMoney(buffer)
     const currentBalance = inputToMoney(balance)
-    if (!valid || !safetyBuffer || !currentBalance) return
-    update.mutate({ payday: paydayNum, safetyBuffer, currentBalance }, { onSuccess: () => setEdits({}) })
+    if (!safetyBuffer || !currentBalance) return
+    // Send the balance only when it changed, so an estimate is not turned into a "confirmed" value by accident.
+    update.mutate({ safetyBuffer, ...(edits.balance !== undefined ? { currentBalance } : {}) }, { onSuccess: () => setEdits({}) })
   }
 
   return (
     <form className="card stack" onSubmit={submit} noValidate>
       <h2 style={{ fontSize: 'var(--text-lg)' }}>{t.settings.finances}</h2>
       <Field
-        label={t.afford.payday}
-        type="number"
-        min={1}
-        max={31}
-        inputMode="numeric"
-        value={payday}
-        onChange={(e) => setEdits((s) => ({ ...s, payday: e.target.value }))}
+        label={t.afford.balance}
+        hint={settings.balanceIsEstimate && edits.balance === undefined ? t.income.balanceEstimate : undefined}
+        inputMode="decimal"
+        value={balance}
+        onChange={(e) => setEdits((s) => ({ ...s, balance: e.target.value }))}
       />
-      <Field label={t.afford.balance} inputMode="decimal" value={balance} onChange={(e) => setEdits((s) => ({ ...s, balance: e.target.value }))} />
       <Field label={t.afford.buffer} inputMode="decimal" value={buffer} onChange={(e) => setEdits((s) => ({ ...s, buffer: e.target.value }))} />
       <div className="cluster">
         <button type="submit" className="btn btn--primary" disabled={!valid || update.isPending}>

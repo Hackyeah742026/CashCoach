@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS = {
   payday: 10,
   safetyBuffer: '300.00',
   currentBalance: '1601.52',
+  balanceIsEstimate: false,
+  income: { status: 'unknown' as const, day: 10, dayRule: 'fixed_day' as const, amount: null, source: null },
 }
 
 // ---------------------------------------------------------------------------

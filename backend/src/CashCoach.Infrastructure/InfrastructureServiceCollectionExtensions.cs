@@ -43,6 +43,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<AnalyticsService>();
         services.AddScoped<GoalService>();
         services.AddScoped<ChallengeService>();
+        services.AddScoped<IncomeService>();
 
         return services;
     }

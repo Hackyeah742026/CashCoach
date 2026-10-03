@@ -16,7 +16,8 @@ public sealed class SnapshotLoader(AppDbContext db, TimeProvider timeProvider)
         var goals = await db.Goals.AsNoTracking().Where(g => g.UserId == userId).OrderBy(g => g.CreatedAt).ToListAsync(cancellationToken);
 
         var asOf = transactions.Count > 0 ? transactions.Max(t => t.Date) : DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-        return new FinancialSnapshot(asOf, BalanceOf(user, transactions), user.Payday, user.SafetyBufferGr, transactions, recurring, goals);
+        return new FinancialSnapshot(
+            asOf, BalanceOf(user, transactions), user.Payday, user.SafetyBufferGr, transactions, recurring, goals, user.PaydayRule, user.SalaryGr);
     }
 
     /// <summary>The user's balance, or when unset an estimate: the net of the imported history, never below zero.</summary>

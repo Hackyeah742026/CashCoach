@@ -23,6 +23,8 @@ import type {
   Verdict,
   Wrapped,
   WrappedMonthInfo,
+  IncomeAnswer,
+  IncomeDetection,
 } from '../../types'
 import {
   CHAT_FALLBACK,
@@ -70,7 +72,12 @@ function initialState(): MockState {
 function load(): MockState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...initialState(), ...JSON.parse(raw) }
+    if (raw) {
+      const stored = JSON.parse(raw) as Partial<MockState>
+      const initial = initialState()
+      // Settings stored by an older version may miss newer fields.
+      return { ...initial, ...stored, settings: { ...initial.settings, ...stored.settings } }
+    }
   } catch {
     // ignore corrupt or unavailable storage
   }
@@ -149,6 +156,35 @@ export function importTransactions(file: File | null): Promise<ImportResult> {
     },
     1800,
   )
+}
+
+export function getIncomeDetection(): Promise<IncomeDetection> {
+  const salary = {
+    source: 'Wynagrodzenie',
+    kind: 'salary' as const,
+    day: 10,
+    dayRule: 'fixed_day' as const,
+    amount: '3200.00',
+    amountMin: '3200.00',
+    amountMax: '3200.00',
+    monthsSeen: 3,
+    confidence: 'high' as const,
+    evidence: { transactionIds: [] },
+  }
+  const confirmed = state.settings.income.status === 'unknown' ? null : state.settings.income
+  return delay({ guess: salary, others: [], confirmed }, 300)
+}
+
+export function confirmIncome(answer: IncomeAnswer): Promise<Settings> {
+  state.settings = {
+    ...state.settings,
+    payday: answer.hasIncome ? answer.day : state.settings.payday,
+    income: answer.hasIncome
+      ? { status: 'confirmed', day: answer.day, dayRule: answer.dayRule, amount: answer.amount, source: answer.source ?? null }
+      : { status: 'none', day: null, dayRule: 'fixed_day', amount: null, source: null },
+  }
+  persist()
+  return delay(state.settings, 300)
 }
 
 export function deleteAllData(): Promise<void> {

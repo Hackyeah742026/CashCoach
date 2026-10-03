@@ -7,6 +7,9 @@ import type {
   Goal,
   GoalPreview,
   ImportResult,
+  Income,
+  IncomeCandidate,
+  IncomeDetection,
   Money,
   SavingsResponse,
   Settings,
@@ -22,6 +25,9 @@ import type {
   BGoalPreview,
   BHome,
   BImport,
+  BIncome,
+  BIncomeCandidate,
+  BIncomeDetection,
   BOpportunities,
   BProfile,
   BPurchase,
@@ -52,8 +58,37 @@ export function toSettings(p: BProfile): Settings {
     payday: p.payday ?? DEFAULT_PAYDAY,
     safetyBuffer: money(p.safety_buffer),
     currentBalance: money(p.balance),
+    balanceIsEstimate: p.balance_is_estimate,
+    income: toIncome(p.income),
     onboarded: p.has_data,
     availableMonths: p.available_months,
+  }
+}
+
+export function toIncome(i: BIncome): Income {
+  return { status: i.status, day: i.day, dayRule: i.day_rule, amount: moneyOrNull(i.amount), source: i.source }
+}
+
+function toIncomeCandidate(c: BIncomeCandidate): IncomeCandidate {
+  return {
+    source: c.source,
+    kind: c.kind,
+    day: c.day,
+    dayRule: c.day_rule,
+    amount: money(c.amount),
+    amountMin: money(c.amount_min),
+    amountMax: money(c.amount_max),
+    monthsSeen: c.months_seen,
+    confidence: c.confidence,
+    evidence: toEvidence(c.evidence),
+  }
+}
+
+export function toIncomeDetection(d: BIncomeDetection): IncomeDetection {
+  return {
+    guess: d.guess ? toIncomeCandidate(d.guess) : null,
+    others: d.others.map(toIncomeCandidate),
+    confirmed: d.confirmed ? toIncome(d.confirmed) : null,
   }
 }
 
@@ -68,7 +103,7 @@ export function toImportResult(r: BImport, bank: ImportResult['bank']): ImportRe
     needsReview: r.categorized.other,
     from: r.period?.from ?? '',
     to: r.period?.to ?? '',
-    detectedBalance: null,
+    detectedBalance: moneyOrNull(r.detected_balance),
   }
 }
 

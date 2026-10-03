@@ -12,9 +12,13 @@ There are no migrations: `AppDbContext.SchemaVersion` is written to SQLite's `us
 | `id` | GUID | Demo personas have fixed ids (`de000000-…-000000000001` to `…03`) |
 | `name`, `persona`, `language` | text | `persona`: `student` · `first_job` · `bnpl_heavy`; `language`: `pl` · `en` |
 | `consent_at`, `created_at` | datetime | |
-| `payday` | int? | Day of month the salary arrives; detected on import, user-editable |
+| `payday` | int? | Day of month the income arrives (31 with `last_working_day`); guessed on import until the income is confirmed |
+| `payday_rule` | text | `fixed_day` · `last_working_day` |
+| `salary_gr` | long? | Confirmed monthly income |
+| `income_status` | text | `unknown` · `confirmed` · `none` |
+| `income_source` | text? | e.g. `Wynagrodzenie` |
 | `safety_buffer_gr` | long | Default 30 000 (300 zł) |
-| `balance_gr` | long? | Balance at the latest transaction date. CSVs carry no balance, so it is set by the user (or per demo persona); when `null` it is estimated from the history |
+| `balance_gr` | long? | Balance at the latest transaction date: from a CSV `balance` column, the user, or the demo persona; when `null` it is estimated from the history |
 
 ### `transactions`
 `id`, `user_id`, `date`, `amount_gr`, `raw_description` (never sent to the AI), `merchant` (display name, e.g. `Glovo`), `category`, `channel` (`card` · `blik` · `transfer`), `is_recurring`, `recurring_group_id`, `is_bnpl`. Duplicates (same user, date, amount, description) are skipped on import.
@@ -48,5 +52,6 @@ All in `CashCoach.Core/Analytics/`, built from a `FinancialSnapshot` (as-of date
 | `GoalProgress`, `GoalPreview` | `GoalCalculator`, `GoalPlanner` | Status, required per week/month, short-by, reach date; preview verdict and plan |
 | `WrappedStats` | `WrappedBuilder` | Monthly totals, top categories/merchant, delivery, biggest day, subscriptions, month-over-month, cheapest weekday, fun equivalent, personality |
 | `Alert` | `AlertBuilder` | `run_out`, `bnpl`, `duplicate_sub`, `challenge` |
+| `IncomeCandidate` | `IncomeDetector` | Regular income: source, kind, day and rule, median amount and range, months seen, confidence |
 
 Evidence attached to API output: `{ transaction_ids: Guid[], figures: { key, label, amount }[] }`.
