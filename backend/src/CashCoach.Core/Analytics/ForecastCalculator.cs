@@ -53,7 +53,7 @@ public static class ForecastCalculator
     public static Forecast Compute(FinancialSnapshot snapshot, IReadOnlyList<UpcomingPayment>? extraPayments = null)
     {
         var asOf = snapshot.AsOf;
-        var nextPayday = NextPayday(asOf, snapshot.Payday);
+        var nextPayday = NextPayday(asOf, snapshot.Payday, snapshot.PaydayRule);
         var daysLeft = nextPayday.DayNumber - asOf.DayNumber;
 
         var upcoming = UpcomingPayments(snapshot.Recurring, asOf, nextPayday);
@@ -110,11 +110,18 @@ public static class ForecastCalculator
         : ForecastStatus.Danger;
 
     /// <summary>The first payday strictly after <paramref name="asOf"/>; the first of next month when the payday is unknown.</summary>
-    public static DateOnly NextPayday(DateOnly asOf, int? payday)
+    public static DateOnly NextPayday(DateOnly asOf, int? payday, PaydayRule rule = PaydayRule.FixedDay)
     {
         if (payday is not { } day)
         {
             return new DateOnly(asOf.Year, asOf.Month, 1).AddMonths(1);
+        }
+
+        if (rule == PaydayRule.LastWorkingDay)
+        {
+            var thisMonthLast = IncomeDetector.LastWorkingDay(asOf.Year, asOf.Month);
+            var following = asOf.AddMonths(1);
+            return thisMonthLast > asOf ? thisMonthLast : IncomeDetector.LastWorkingDay(following.Year, following.Month);
         }
 
         var thisMonth = OnDay(asOf.Year, asOf.Month, day);
@@ -128,10 +135,12 @@ public static class ForecastCalculator
     }
 
     /// <summary>The payday that started the current pay period (one month before <see cref="NextPayday"/>).</summary>
-    public static DateOnly PreviousPayday(DateOnly asOf, int? payday)
+    public static DateOnly PreviousPayday(DateOnly asOf, int? payday, PaydayRule rule = PaydayRule.FixedDay)
     {
-        var previous = NextPayday(asOf, payday).AddMonths(-1);
-        return payday is { } day ? OnDay(previous.Year, previous.Month, day) : previous;
+        var previous = NextPayday(asOf, payday, rule).AddMonths(-1);
+        return payday is not { } day ? previous
+            : rule == PaydayRule.LastWorkingDay ? IncomeDetector.LastWorkingDay(previous.Year, previous.Month)
+            : OnDay(previous.Year, previous.Month, day);
     }
 
     /// <summary>Recurring payments due after <paramref name="asOf"/> and before <paramref name="until"/>. BNPL plans contribute only their next instalment.</summary>

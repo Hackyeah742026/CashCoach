@@ -42,7 +42,7 @@ public static class HomeEndpoints
                         forecast.UpcomingTransactionIds,
                         ForecastResponse.Figures(forecast, language).Take(3).ToList(),
                         $"{Plain(forecast.BalanceGr)} − {Plain(forecast.FixedUpcomingGr)} − {Plain(forecast.SafetyBufferGr)} = {Plain(forecast.SafeToSpendGr)}"),
-                    new PayPeriodDto(ForecastCalculator.PreviousPayday(snapshot.AsOf, snapshot.Payday), forecast.NextPayday, forecast.DaysLeft),
+                    new PayPeriodDto(ForecastCalculator.PreviousPayday(snapshot.AsOf, snapshot.Payday, snapshot.PaydayRule), forecast.NextPayday, forecast.DaysLeft),
                     forecast.Status,
                     WrappedBuilder.CategoryChanges(snapshot.Transactions, selected)
                         .Select(c => new HomeCategoryDto(c.Category, -Zl.Of(c.AmountGr), c.ChangePct))

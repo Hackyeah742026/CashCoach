@@ -38,7 +38,8 @@ P0 = needed for the demo · P1 = makes it shine · P2 = only if time allows.
 - [x] P1 `/wrapped`, `/wrapped/months`, `/goals` (+ deposit, preview), `/challenges` (+ check-in)
 - [x] P1 `POST /chat` (JSON or SSE), `GET /chat/{id}`, `GET /chat/suggestions`, rate limit
 - [x] P0 API tests (69, fake LLM)
-- [ ] P0 Connect the frontend (see `frontend/docs/BACKEND_INTEGRATION.md`)
+- [x] P0 Connect the frontend (see `frontend/docs/BACKEND_INTEGRATION.md`)
+- [x] P0 Income detection and confirmation in onboarding, balance from CSV (see `docs/INCOME_DETECTION.md`)
 
 ## Frontend
 - [ ] P0 Theme tokens, layout shell, mobile nav

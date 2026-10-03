@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, PiggyBank, TrendingDown, TrendingUp, Wallet 
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router'
 import { AffordSheet } from '../components/home/AffordSheet'
+import { BalanceCheckCard } from '../components/home/BalanceCheckCard'
 import { CategoryBreakdown } from '../components/home/CategoryBreakdown'
 import '../components/home/home.css'
 import { InsightCard } from '../components/home/InsightCard'
@@ -70,6 +71,8 @@ export function Home() {
         <h1>{t.home.greeting}</h1>
         {month && <MonthSwitcher months={months} month={month} onChange={setMonth} />}
       </header>
+
+      <BalanceCheckCard />
 
       {summary.isError && <ErrorState onRetry={() => summary.refetch()} />}
 

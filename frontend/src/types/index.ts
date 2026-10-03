@@ -48,18 +48,63 @@ export type Verdict = 'green' | 'yellow' | 'red'
 // ---------------------------------------------------------------------------
 // Settings & import
 
+export type IncomeStatus = 'unknown' | 'confirmed' | 'none'
+
+export type PaydayRule = 'fixed_day' | 'last_working_day'
+
+/** The user's regular income. With status "unknown" the day is only a guess from the imported data. */
+export interface Income {
+  status: IncomeStatus
+  /** 1–31 (31 with "last_working_day"); null without regular income */
+  day: number | null
+  dayRule: PaydayRule
+  /** Confirmed monthly amount */
+  amount: Money | null
+  source: string | null
+}
+
 export interface Settings {
   language: Language
   /** Day of month income usually arrives (1–31) */
   payday: number
   safetyBuffer: Money
   currentBalance: Money
+  /** True until the balance comes from a CSV balance column or the user confirms it */
+  balanceIsEstimate: boolean
+  income: Income
   onboarded: boolean
   /** Months that have imported data, oldest → newest */
   availableMonths: MonthKey[]
 }
 
-export type SettingsUpdate = Partial<Omit<Settings, 'onboarded' | 'availableMonths'>>
+export type SettingsUpdate = Partial<Omit<Settings, 'onboarded' | 'availableMonths' | 'balanceIsEstimate' | 'income'>>
+
+export type IncomeKind = 'salary' | 'stipend' | 'other'
+
+/** A regular income the backend found in the imported transactions. */
+export interface IncomeCandidate {
+  source: string
+  kind: IncomeKind
+  day: number
+  dayRule: PaydayRule
+  /** Median monthly amount; amountMin–amountMax is the range seen */
+  amount: Money
+  amountMin: Money
+  amountMax: Money
+  monthsSeen: number
+  confidence: 'high' | 'medium' | 'low'
+  evidence: Evidence
+}
+
+export interface IncomeDetection {
+  guess: IncomeCandidate | null
+  others: IncomeCandidate[]
+  confirmed: Income | null
+}
+
+export type IncomeAnswer =
+  | { hasIncome: false }
+  | { hasIncome: true; day: number; dayRule: PaydayRule; amount: Money; source?: string | null }
 
 export interface ImportResult {
   importId: string

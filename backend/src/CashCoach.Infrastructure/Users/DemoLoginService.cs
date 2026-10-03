@@ -88,7 +88,7 @@ public sealed class DemoLoginService(
 
     /// <summary>
     /// Imports a persona's synthetic history into an existing user ("try it with demo data").
-    /// The payday follows the demo salary; the persona's balance is used unless the user already set one.
+    /// The import guesses the payday (unless the user already confirmed their income); the persona's balance is used unless the user already set one.
     /// </summary>
     public async Task<ImportResult> ImportDemoAsync(Guid userId, Persona persona, CancellationToken cancellationToken)
     {
@@ -96,7 +96,6 @@ public sealed class DemoLoginService(
         var result = await importService.ImportAsync(userId, csv, cancellationToken);
 
         var user = await db.Users.SingleAsync(u => u.Id == userId, cancellationToken);
-        user.Payday = result.Recurring.SalaryDay ?? user.Payday;
         user.BalanceGr ??= DemoPersonas.BalanceOf(persona);
         await db.SaveChangesAsync(cancellationToken);
         return result;

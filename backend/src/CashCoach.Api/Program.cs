@@ -46,6 +46,7 @@ userApi.MapTransactionEndpoints();
 userApi.MapInsightEndpoints();
 userApi.MapAnalyticsEndpoints();
 userApi.MapHomeEndpoints();
+userApi.MapIncomeEndpoints();
 userApi.MapWrappedEndpoints();
 userApi.MapGoalEndpoints();
 userApi.MapChallengeEndpoints();

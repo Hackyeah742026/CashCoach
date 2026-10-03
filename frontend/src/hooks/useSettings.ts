@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../api/client'
 import { useLanguage } from '../i18n/context'
-import type { Language, Settings, SettingsUpdate } from '../types'
+import type { IncomeAnswer, Language, Settings, SettingsUpdate } from '../types'
 import { queryKeys } from './queryKeys'
 
 export function useSettings() {
@@ -28,6 +28,23 @@ export function useChangeLanguage() {
     setLang(lang)
     update.mutate({ language: lang })
   }
+}
+
+/** What the backend found as the user's regular income (after an import). */
+export function useIncomeDetection(enabled = true) {
+  return useQuery({ queryKey: ['income', 'detection'], queryFn: api.getIncomeDetection, enabled })
+}
+
+/** Saves the user's income answer; the payday changes every forecast, so everything is refetched. */
+export function useConfirmIncome() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (answer: IncomeAnswer) => api.confirmIncome(answer),
+    onSuccess: (settings) => {
+      qc.setQueryData<Settings>(queryKeys.settings, settings)
+      qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'settings' })
+    },
+  })
 }
 
 export function useImportTransactions() {

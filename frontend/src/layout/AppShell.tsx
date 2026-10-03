@@ -14,12 +14,12 @@ interface NavItem {
 
 export function Brand() {
   return (
-    <span className="brand">
+    <NavLink to={'/'} className="brand">
       <span className="logo-mark" aria-hidden>
         C
       </span>
       CashCoach
-    </span>
+    </NavLink>
   )
 }
 

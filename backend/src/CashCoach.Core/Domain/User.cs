@@ -11,8 +11,18 @@ public class User
     public DateTime? ConsentAt { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    /// <summary>Day of month the salary arrives (1 to 31). Detected on import; the user can override it.</summary>
+    /// <summary>Day of month the income arrives (1 to 31; 31 with <see cref="PaydayRule.LastWorkingDay"/>). Guessed on import until confirmed.</summary>
     public int? Payday { get; set; }
+
+    public PaydayRule PaydayRule { get; set; } = PaydayRule.FixedDay;
+
+    /// <summary>Confirmed regular monthly income in grosze; <c>null</c> until confirmed.</summary>
+    public long? SalaryGr { get; set; }
+
+    public IncomeStatus IncomeStatus { get; set; } = IncomeStatus.Unknown;
+
+    /// <summary>Where the income comes from, e.g. <c>Wynagrodzenie</c>.</summary>
+    public string? IncomeSource { get; set; }
 
     /// <summary>Money the forecast keeps untouched, in grosze.</summary>
     public long SafetyBufferGr { get; set; } = DefaultSafetyBufferGr;

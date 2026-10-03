@@ -6,12 +6,13 @@ using CsvHelper.Configuration;
 
 namespace CashCoach.Infrastructure.Import;
 
-public sealed record CsvTransactionRow(int LineNumber, DateOnly Date, long AmountGr, string Description);
+/// <param name="BalanceGr">Account balance after this operation, when the file has a <c>balance</c> (or <c>saldo</c>) column.</param>
+public sealed record CsvTransactionRow(int LineNumber, DateOnly Date, long AmountGr, string Description, long? BalanceGr = null);
 
 /// <summary>A CSV that cannot be imported; the message is safe to show to the user.</summary>
 public sealed class ImportFormatException(string message) : Exception(message);
 
-/// <summary>Reads <c>date;amount;description;currency</c> CSVs. Amounts may use a decimal comma or dot.</summary>
+/// <summary>Reads <c>date;amount;description;currency[;balance]</c> CSVs. Amounts may use a decimal comma or dot.</summary>
 public static class CsvTransactionReader
 {
     public const string Header = "date;amount;description;currency";
@@ -62,6 +63,7 @@ public static class CsvTransactionReader
         }
 
         var hasCurrency = header.Any(column => column.Trim().Equals("currency", StringComparison.OrdinalIgnoreCase));
+        var balanceColumn = header.Select(column => column.Trim().ToLowerInvariant()).FirstOrDefault(column => column is "balance" or "saldo");
         var rows = new List<CsvTransactionRow>();
         while (csv.Read())
         {
@@ -80,7 +82,9 @@ public static class CsvTransactionReader
                 throw new ImportFormatException($"Line {line}: only {Currency} is supported, got '{currency}'.");
             }
 
-            rows.Add(new CsvTransactionRow(line, date, amountGr, description));
+            var balanceText = balanceColumn is null ? null : csv.GetField(balanceColumn);
+            long? balanceGr = string.IsNullOrWhiteSpace(balanceText) ? null : ParseAmount(balanceText, line);
+            rows.Add(new CsvTransactionRow(line, date, amountGr, description, balanceGr));
         }
 
         return rows;
