@@ -1,22 +1,21 @@
 # AI Pipeline
 
-How Claude is used in CashCoach, what it gets as input, what it returns, and how its output is checked.
+How Google Gemini is used in CashCoach, what it gets as input, what it returns, and how its output is checked.
 
 ## Model and settings
 
 | Setting | Value |
 |---|---|
-| Provider / SDK | Anthropic Claude API · official `Anthropic` NuGet package |
-| Model | `claude-opus-5-5` (configurable: `Anthropic:Model`) |
-| Thinking | Adaptive (always on for this model). Depth controlled via `output_config.effort` |
-| Effort | `low` for categorization · `medium` for insights, savings, affordability, chat |
-| Output | Structured outputs (`output_config.format`, JSON schema) for every non-chat task. Streaming for chat |
-| Tools | Client-side, read-only, `strict: true`, `tool_choice: auto` |
+| Provider / SDK | Google Gemini API · official `Google.GenAI` NuGet package |
+| Model | configurable: `Gemini:Model` |
+| Key | `GEMINI_API_KEY` from the root `.env` (loaded with `DotNetEnv`) or an env var in deployment |
+| Temperature | 0 for JSON tasks (categorization) · 0.3 for text (insights, savings, affordability, chat) |
+| Output | JSON mode with a response schema for every non-chat task. Streaming for chat |
+| Tools | Function calling, client-side, read-only |
 
-Model notes (verified against current API docs):
-- Forced `tool_choice` (`any` / `tool`) and assistant prefill both return 400 on this model. We use structured outputs or `auto` plus prompt steering.
-- Always check `stop_reason` (`refusal`, `max_tokens`) before reading the content.
-- Keep the system prompt and tool list byte-stable so prompt caching works. Volatile data (dates, figures) goes in the user turn.
+Model notes:
+- Always check the finish reason (safety block, max tokens) before reading the content.
+- Keep the system instruction and tool list stable. Volatile data (dates, figures) goes in the user turn.
 
 ## The five AI tasks
 
@@ -68,7 +67,7 @@ After every AI response, before it reaches the user:
 
 ## Privacy: anonymizer
 
-Runs before any data is sent to Claude:
+Runs before any data is sent to Gemini:
 - removes IBANs and account numbers (`\d{26}`, `PL\d{26}`), card numbers, phone numbers;
 - strips personal names from transfer titles ("Przelew od JAN KOWALSKI" becomes "Przelew od [osoba]");
 - sends merchant, category, amount, date and transaction ID only. Balances are sent only for affordability.

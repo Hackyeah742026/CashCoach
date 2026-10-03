@@ -21,7 +21,7 @@
                                    ┌───────────────┴──────────────┐
                                    │  CashCoach.Infrastructure    │
                                    │  Import: CSV parsers         │
-                                   │  Ai: ClaudeCoach + tools     │──► Anthropic Claude API
+                                   │  Ai: GeminiCoach + tools     │──► Google Gemini API
                                    │  Persistence: EF Core/SQLite │
                                    └──────────────────────────────┘
 ```
@@ -47,7 +47,7 @@ The trusted center of the system. Pure C#, no I/O, fully unit-tested.
 
 ### CashCoach.Infrastructure
 - **Import:** `BankFormatDetector` sniffs headers and encoding and picks a parser. `CsvTransactionParser` handles Polish number and date formats. Output is a list of `Transaction`.
-- **Ai:** `ClaudeClient` wraps the `Anthropic` SDK (model, effort, streaming, error handling). `ClaudeCoach` implements `IAiCoach`: categorize, explain, find savings, affordability narrative, chat. Prompts are `.md` files and tools are classes in `Tools/`. See [AI_PIPELINE.md](AI_PIPELINE.md).
+- **Ai:** `GeminiClient` wraps the `Google.GenAI` SDK (model, temperature, streaming, error handling). `GeminiCoach` implements `IAiCoach`: categorize, explain, find savings, affordability narrative, chat. Prompts are `.md` files and tools are classes in `Tools/`. See [AI_PIPELINE.md](AI_PIPELINE.md).
 - **Persistence:** EF Core + SQLite (single file, zero setup). Stores transactions, user category rules, settings (payday, buffer, language) and dismissed suggestions.
 
 ## Key flows
@@ -56,7 +56,7 @@ The trusted center of the system. Pure C#, no I/O, fully unit-tested.
 ```
 CSV upload → BankFormatDetector → CsvTransactionParser → Transactions
   → CategorizationService (rules)            ~80–90% categorized
-  → ClaudeCoach.Categorize(unknown merchants) structured output + confidence
+  → GeminiCoach.Categorize(unknown merchants) structured output + confidence
   → RecurringPaymentDetector
   → save → return ImportResult (counts, uncategorized left, date range)
 ```
@@ -64,7 +64,7 @@ CSV upload → BankFormatDetector → CsvTransactionParser → Transactions
 ### 2. Monthly insight
 ```
 SpendingAnalysisService → computed facts (JSON, each with a stable key)
-  → ClaudeCoach.ExplainSpending(facts) → narrative + evidence keys
+  → GeminiCoach.ExplainSpending(facts) → narrative + evidence keys
   → FactChecker: every amount in the narrative must match a fact key (±0.01)
   → InsightDto
 ```
@@ -73,12 +73,12 @@ SpendingAnalysisService → computed facts (JSON, each with a stable key)
 ```
 AffordabilityRequest (item, price, date, installments?)
   → AffordabilityCalculator → verdict + breakdown + assumptions (deterministic)
-  → ClaudeCoach.ExplainAffordability(result) → short explanation + 1–3 tips
+  → GeminiCoach.ExplainAffordability(result) → short explanation + 1–3 tips
   → AffordabilityResponse (the verdict always comes from the calculator)
 ```
 
 ### 4. Chat
-Claude with tools (`GetTransactions`, `GetCategorySummary`, `CalculateAffordability`), streamed over SSE. Tool results are attached to the reply as evidence.
+Gemini with function calling (`GetTransactions`, `GetCategorySummary`, `CalculateAffordability`), streamed over SSE. Tool results are attached to the reply as evidence.
 
 ## Technical decisions
 
@@ -89,10 +89,10 @@ Claude with tools (`GetTransactions`, `GetCategorySummary`, `CalculateAffordabil
 | CSV import, not open banking | No PSD2 licence is needed for a hackathon, and it's privacy-friendly. Open banking (e.g. via an AIS provider) is the natural next step. |
 | SQLite | Zero setup and a single file, so the demo is portable. |
 | Clean layering (Core has no dependencies) | Finance logic is unit-testable and the AI provider is swappable behind `IAiCoach`. |
-| Claude via the official .NET SDK | Tool use, structured outputs and streaming are first-class. Strong multilingual quality (Polish). |
+| Gemini via the official `Google.GenAI` .NET SDK | Function calling, JSON outputs and streaming are first-class. Strong multilingual quality (Polish). |
 | Anonymize before AI | GDPR/RODO: only merchant, category, amount and date leave the server. |
 
 ## Deployment (demo)
 - Backend: a single container or `dotnet run`. SQLite file in a volume.
 - Frontend: static build served by the API (`wwwroot`) or any static host.
-- Secrets: `ANTHROPIC_API_KEY` via env var.
+- Secrets: `GEMINI_API_KEY` via env var (root `.env` locally).

@@ -27,7 +27,7 @@ P0 = needed for the demo · P1 = makes it shine · P2 = only if time allows.
 - [ ] P0 `CsvTransactionParser` for mBank (`;`, decimal comma, Windows-1250, header offset)
 - [ ] P1 PKO BP parser + `BankFormatDetector`
 - [ ] P0 SQLite `AppDbContext` + repository
-- [ ] P0 `ClaudeClient` (SDK wrapper, config, error handling, stop_reason checks)
+- [ ] P0 `GeminiClient` (`Google.GenAI` wrapper, config, error handling, finish reason checks)
 - [ ] P0 Anonymizer
 - [ ] P0 AI categorization (structured output)
 - [ ] P0 AI spending explanation + fact-checker

@@ -1,5 +1,6 @@
 ---
 name: developer
+model: inherit
 description: C# web .NET developer. Implements features, fixes bugs, and performs development tasks in ASP.NET. Follows SOLID, DRY, and web .NET best practices. Use proactively for C# implementation, API endpoints, services, data access, validation, and refactoring.
 ---
 

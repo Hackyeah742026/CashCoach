@@ -35,7 +35,7 @@ Table: *AI does / Code does / User controls* (from the README).
 This slide answers the brief's "how can users verify outputs and remain in control?"
 
 ### 7. Architecture and technical decisions *(Completeness)*
-React · ASP.NET Core · SQLite · Claude (tool use, structured outputs, streaming). Anonymizer before AI (GDPR). Why CSV rather than open banking for the MVP.
+React · ASP.NET Core · SQLite · Google Gemini (function calling, JSON outputs, streaming). Anonymizer before AI (GDPR). Why CSV rather than open banking for the MVP.
 
 ### 8. Design *(Design)*
 Mobile-first UI, verdict cards, PL/EN, accessibility (color plus icon plus word). 2–3 polished screens.
