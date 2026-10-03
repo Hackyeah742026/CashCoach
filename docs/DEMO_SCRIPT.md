@@ -33,7 +33,7 @@ Total ≈ **309 zł/month**. Dismiss one ("I actually use the gym") to show cont
 ### 2:20 – 2:50 · Can I afford it?
 Type: *"Bilety na koncert + pociąg do Gdańska, 1200 zł, 20 września"*.
 - Verdict **🟡 Possible, but tight**: safe-to-spend 940 zł, short by 260 zł.
-- Breakdown: balance 1,840 zł − bills before payday 600 zł − buffer 300 zł.
+- Breakdown: balance 1,601.52 zł − bills before payday 360.97 zł − buffer 300 zł.
 - AI tip: "Buy the train ticket after payday on the 10th and skip 2 deliveries, and you'll be green."
 - Change the buffer to 150 zł and the verdict recalculates live. *Point: assumptions are editable.*
 

@@ -1,20 +1,18 @@
 # Frontend: React + TypeScript (Vite)
 
 ## Stack
-React 18+, TypeScript (strict), Vite, Tailwind CSS, Recharts (charts), TanStack Query (server state), React Router.
+React 19, TypeScript (strict), Vite, plain CSS with design tokens (`src/index.css`, no Tailwind), TanStack Query (server state), React Router 8, lucide-react (icons), clsx, html-to-image (Wrapped share). Charts are hand-written SVG (`components/home/SpendingChart.tsx`) so they use the CSS color tokens directly.
 
 ## Structure
 - `src/api/client.ts`: the only place that calls `fetch`. Typed functions per endpoint in `docs/API.md`. Base URL from `import.meta.env.VITE_API_URL` (set in the root `.env`; see `.env.example`). Vite looks for `.env` in `frontend/` by default, so `vite.config.ts` must set `envDir: '..'`.
 - The frontend **never** calls Gemini and never reads `GEMINI_*` variables. All AI goes through the backend API. Anything prefixed `VITE_` is bundled into public JS, so never put a secret there.
 - `src/types/index.ts`: TS types mirroring backend DTOs. Keep them in sync with `docs/API.md`.
 - `src/hooks/`: TanStack Query hooks (`useTransactions`, ...). Components never call `api/` directly.
-- `src/pages/`:
-  - `Onboarding`: language, payday, CSV upload
-  - `Dashboard`: summary, chart, savings
-  - `Afford`: "Can I afford this?"
-  - `Chat`
-- `src/components/`: presentational components. `EvidenceDrawer` is shared: any AI claim must be able to open it.
-- `src/styles/theme.css`: design tokens (CSS variables) for colors, radius and spacing, plus light and dark mode.
+- `src/pages/`: `Home`, `Wrapped`, `Chat`, `Goals` (the 4 tabs), `Onboarding`, `Settings`. Sketches are in `docs/SCREENS.md`; the build order and folder layout are in `docs/IMPLEMENTATION_PLAN.md`. Follow both.
+- `src/components/`: `ui/` holds shared pieces (MoneyText, AiText, Sheet, EvidenceDrawer, VerdictCard…). There is one folder per screen (`home/`, `wrapped/`, `chat/`, `goals/`, `onboarding/`). `EvidenceDrawer` is shared: any AI claim must be able to open it.
+- `src/api/mocks/`: mock JSON used while `VITE_USE_MOCKS=true`.
+- `src/index.css`: reset, design tokens (CSS variables) for color, type, spacing, radius, shadow and motion, light and dark themes, global element styles, and shared utilities (`.card`, `.btn`, `.money`, `.badge`, `.ai-text`, `.skeleton`). Components use `var(--token)`, never raw hex values.
+- `docs/`: frontend-only plans. **Read `docs/DESIGN.md` before building any UI.** Put new frontend plans there, not in the root `docs/`.
 
 ## UX rules (Design counts for 20% of the score)
 - Mobile-first. The target user is 18–26 and on a phone. It has to look good at 375px wide.

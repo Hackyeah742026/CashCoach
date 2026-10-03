@@ -4,8 +4,8 @@ P0 = needed for the demo · P1 = makes it shine · P2 = only if time allows.
 
 ## Setup
 - [ ] P0 `dotnet new` solution and projects (Api, Core, Infrastructure, Tests) + references
-- [ ] P0 `npm create vite` (react-ts) in `frontend/`, add Tailwind, Router, TanStack Query, Recharts
-- [ ] P0 `.env.example` → `.env`, `GEMINI_API_KEY` loaded with `DotNetEnv`, `Gemini:Model` config
+- [ ] P0 `npm create vite` (react-ts) in `frontend/`, add Router, TanStack Query, lucide-react
+- [ ] P0 `.env.example` → `.env`, config binding for `Anthropic:ApiKey` / `Anthropic:Model`
 - [ ] P0 CORS + `/api/health`
 - [ ] P0 Extend `.gitignore` for `dist/`, `*.db`, `.env.local`
 

@@ -10,4 +10,13 @@
 
 Format: `date;amount;description;currency`, UTF-8, `;` separator, Polish decimal comma. Each file has 150–250 rows from 2026-07-01 to 2026-09-30, including messy descriptions (`ZABKA Z5521 K.1 KRAKOW`, `KLARNA*ZALANDO RATA 2/4`), a Spotify + YouTube Music pair, and BNPL instalments.
 
-Regenerate from the API project: `dotnet run --project backend/src/CashCoach.Api -- --generate-samples`.
+## What the demo data must contain (to match `docs/DEMO_SCRIPT.md`)
+- Income: salary from the café on the 10th (about 2,400 zł) and a family transfer (800 zł)
+- Rent share (1,100 zł) via transfer to a flatmate
+- About 14 food delivery orders in August (Glovo, Pyszne.pl), totaling about 412 zł; fewer in June and July
+- Subscriptions: Spotify, Netflix, phone (Play), gym (139 zł), **two cloud storage plans** (Google One + iCloud)
+- Groceries: Biedronka, Lidl, Żabka
+- Transport: Bolt, MPK Kraków ticket
+- A few BLIK transfers to people, one Allegro purchase, one PayPo installment
+- 3–5 deliberately unusual merchant names (for AI categorization and the review queue)
+- Closing balance of 1,601.52 zł (bills before payday 360.97 zł, so safe-to-spend is 940.55 zł)

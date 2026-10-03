@@ -49,6 +49,6 @@ Who benefits, why now, what's built and working today. QR code to the demo and r
 ---
 
 ## Design notes for the PDF
-- Same color tokens as the app (`frontend/src/styles/theme.css`).
+- Same color tokens as the app (`frontend/src/index.css`, plan in `frontend/docs/DESIGN.md`).
 - One idea per slide, large numbers, real screenshots (no mockups if possible).
 - Export at 16:9 and check that the PDF has ≤ 10 pages.
