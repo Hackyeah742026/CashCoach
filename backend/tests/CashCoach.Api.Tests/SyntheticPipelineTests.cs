@@ -27,7 +27,7 @@ public class SyntheticPipelineTests
     {
         var profile = SyntheticPersonas.For(persona);
         var rows = SyntheticDataGenerator.Generate(persona);
-        rows.Should().HaveCountGreaterThanOrEqualTo(150).And.HaveCountLessThanOrEqualTo(250);
+        rows.Should().HaveCountGreaterThanOrEqualTo(100).And.HaveCountLessThanOrEqualTo(250);
 
         var dictionary = new JsonMerchantDictionary();
         var knownKeys = dictionary.Entries.Select(entry => entry.Key).ToHashSet(StringComparer.Ordinal);

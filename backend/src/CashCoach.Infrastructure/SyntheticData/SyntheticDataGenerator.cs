@@ -16,7 +16,7 @@ public static class SyntheticDataGenerator
 
     /// <summary>Probability of 0, 1, 2 or 3 everyday purchases on a given day.</summary>
     private static readonly int[] DailyPurchaseCounts = [0, 1, 2, 3];
-    private static readonly float[] DailyPurchaseWeights = [0.05f, 0.35f, 0.4f, 0.2f];
+    private static readonly float[] DailyPurchaseWeights = [0.2f, 0.5f, 0.2f, 0.1f];
 
     public static IReadOnlyList<SyntheticTransaction> Generate(Persona persona)
     {

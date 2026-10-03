@@ -27,13 +27,13 @@ public static class DemoPersonas
 
     /// <summary>
     /// Account balance on the last day of the synthetic history (CSV exports carry no balance).
-    /// Chosen so the forecast tells each persona's story: student tight, first job fine, BNPL-heavy runs out before payday.
+    /// Chosen so safe-to-spend stays positive for every persona, while BNPL-heavy still runs out before payday at her current pace.
     /// </summary>
     public static long BalanceOf(Persona persona) => persona switch
     {
         Persona.Student => 182_000,
         Persona.FirstJob => 610_000,
-        Persona.BnplHeavy => 210_000,
+        Persona.BnplHeavy => 240_000,
         _ => throw new ArgumentOutOfRangeException(nameof(persona), persona, null),
     };
 }
