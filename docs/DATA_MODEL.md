@@ -1,78 +1,52 @@
 # Data Model
 
-All domain types live in `backend/src/CashCoach.Core/Domain/`. Money is `decimal` and currency is PLN.
+Entities live in `backend/src/CashCoach.Core/Domain/`. SQLite via EF Core (`Infrastructure/Persistence/AppDbContext.cs`), created with `EnsureCreated`. Tables and columns are `snake_case`; enums are stored as `snake_case` strings. Money is stored as integer **grosze** (`long …Gr`); expenses negative, income positive.
 
-## Transaction
-| Field | Type | Notes |
+There are no migrations: `AppDbContext.SchemaVersion` is written to SQLite's `user_version`, and a database from an older version is dropped and recreated on startup (it only holds demo data).
+
+## Tables
+
+### `users`
+| Column | Type | Notes |
 |---|---|---|
-| `Id` | string | Stable hash of (date, amount, raw description, bank), used for de-duplication |
-| `Date` | DateOnly | Operation date |
-| `Amount` | decimal | Expense < 0, income > 0 |
-| `Currency` | string | `PLN`. Other currencies are flagged and excluded from totals |
-| `RawDescription` | string | As exported. **Never sent to the AI un-anonymized** |
-| `Merchant` | string | Normalized (`GLOVO*ZAMOWIENIE KRAKOW` → `Glovo`) |
-| `Category` | Category | Enum, see `docs/API.md` |
-| `CategorySource` | enum | `Rule` · `Ai` · `User` |
-| `Confidence` | double | 1.0 for Rule and User. Model-provided for Ai |
-| `IsRecurring` | bool | Set by `RecurringPaymentDetector` |
-| `ImportId` | string | Which upload it came from |
+| `id` | GUID | Demo personas have fixed ids (`de000000-…-000000000001` to `…03`) |
+| `name`, `persona`, `language` | text | `persona`: `student` · `first_job` · `bnpl_heavy`; `language`: `pl` · `en` |
+| `consent_at`, `created_at` | datetime | |
+| `payday` | int? | Day of month the salary arrives; detected on import, user-editable |
+| `safety_buffer_gr` | long | Default 30 000 (300 zł) |
+| `balance_gr` | long? | Balance at the latest transaction date. CSVs carry no balance, so it is set by the user (or per demo persona); when `null` it is estimated from the history |
 
-## Category
-Enum (see the API doc), plus metadata: display names in PL and EN, color, icon, `IsEssential` (rent, groceries, transport) and `IsDiscretionary` (delivery, entertainment). The savings logic uses these.
+### `transactions`
+`id`, `user_id`, `date`, `amount_gr`, `raw_description` (never sent to the AI), `merchant` (display name, e.g. `Glovo`), `category`, `channel` (`card` · `blik` · `transfer`), `is_recurring`, `recurring_group_id`, `is_bnpl`. Duplicates (same user, date, amount, description) are skipped on import.
 
-## CategoryRule
-| Field | Type | Notes |
+### `recurring_groups`
+`id`, `user_id`, `merchant`, `type` (`subscription` · `rent` · `salary` · `bnpl`), `avg_amount_gr` (signed), `period_days` (30 or 7), `next_date`, `active`, `user_confirmed` (the "still using it?" answer, `null` until answered). Rebuilt after every import; ids and answers survive by merchant + type.
+
+### `goals`
+`id`, `user_id`, `name`, `emoji`, `target_gr`, `saved_gr`, `deadline`, `monthly_plan_gr`, `created_at`. Progress, status and reach date are computed on read (`GoalCalculator`).
+
+### `challenges`
+`id`, `user_id`, `type` (`no_delivery` · `no_taxi`), `title`, `start_date`, `end_date`, `target` (days), `progress` (best streak), `streak`, `status` (`active` · `completed` · `failed`), `last_break_date` (latest breaking payment already counted), `last_check_in_on`.
+
+### `chat_messages`
+`id`, `user_id`, `conversation_id`, `role` (`user` · `assistant`), `content` (user text is scrubbed of account numbers first), `facts_json` (assistant only: tools used, transaction ids, figures, `fallback`, `fact_check`), `created_at`.
+
+### `user_merchant_rules`
+`user_id`, `merchant`, `category`. Created by `PATCH /transactions/{id}` with `apply_to_merchant`; applied on later imports.
+
+### `dismissals`
+`user_id`, `key`, `created_at`. Keys are `alert:<alert id>` or `opportunity:<opportunity id>`; both ids are stable strings such as `run_out:2026-10-05` or `duplicate_subscription:music`.
+
+## Computed (not stored)
+All in `CashCoach.Core/Analytics/`, built from a `FinancialSnapshot` (as-of date, balance, payday, buffer, transactions, active recurring groups, goals):
+
+| Type | From | Notes |
 |---|---|---|
-| `Pattern` | string | Case-insensitive substring or regex on the normalized merchant |
-| `Category` | Category | |
-| `Source` | enum | `BuiltIn` (shipped dictionary) · `User` (from a correction). User rules win |
+| `Forecast` | `ForecastCalculator` | Next payday, fixed upcoming payments, median daily spending, projected end, run-out date, status, safe-to-spend, daily series |
+| `Opportunity` | `OpportunityFinder` | Stable id, type, monthly/yearly saving, monthly spend, count, difficulty, transaction ids |
+| `PurchaseSimulation`, `ChangeSimulation` | `Simulator` | Before/after forecasts, verdict, goal impacts |
+| `GoalProgress`, `GoalPreview` | `GoalCalculator`, `GoalPlanner` | Status, required per week/month, short-by, reach date; preview verdict and plan |
+| `WrappedStats` | `WrappedBuilder` | Monthly totals, top categories/merchant, delivery, biggest day, subscriptions, month-over-month, cheapest weekday, fun equivalent, personality |
+| `Alert` | `AlertBuilder` | `run_out`, `bnpl`, `duplicate_sub`, `challenge` |
 
-## RecurringPayment
-| Field | Type |
-|---|---|
-| `Merchant` | string |
-| `TypicalAmount` | decimal |
-| `Period` | `Weekly` · `Monthly` · `Yearly` |
-| `LastDate` / `NextExpectedDate` | DateOnly |
-| `TransactionIds` | string[] |
-
-## Budget / UserSettings
-| Field | Type | Notes |
-|---|---|---|
-| `Language` | `pl` · `en` | |
-| `Payday` | int (1–31) | Day of month income usually arrives. Auto-suggested from income transactions |
-| `SafetyBuffer` | decimal | Default 300 zł |
-| `CurrentBalance` | decimal | From the CSV's last balance, or entered by the user |
-
-## SavingSuggestion
-| Field | Type | Notes |
-|---|---|---|
-| `Id` | string | Candidate type + key, e.g. `sub_dup_spotify` |
-| `Type` | enum | `UnusedSubscription` · `DuplicateSubscription` · `FrequentSmallPurchases` · `DeliveryVsGroceries` · `BnplUsage` · `CategorySpike` |
-| `MonthlyImpact` | decimal | **Computed by code** |
-| `Calculation` | string | Human-readable formula |
-| `Title` / `Rationale` / `Difficulty` | string / string / enum | **Written by AI** (template fallback) |
-| `Evidence` | Evidence | |
-| `Dismissed` | bool | User control |
-
-## AffordabilityResult
-| Field | Type |
-|---|---|
-| `Verdict` | `Green` · `Yellow` · `Red` |
-| `SafeToSpend` | decimal |
-| `Shortfall` | decimal? |
-| `Breakdown` | `BreakdownLine[]` (label, amount, transactionIds) |
-| `Assumptions` | payday, buffer, balance, horizon date |
-| `Explanation` | AI text + tips (optional, template fallback) |
-
-## Evidence
-Attached to every AI-produced item.
-| Field | Type |
-|---|---|
-| `TransactionIds` | string[] |
-| `FactKeys` | string[] (keys of computed facts, e.g. `cat.food_delivery.month`) |
-| `Figures` | `{label, amount}[]` |
-| `Calculation` | string? |
-
-## Persistence (SQLite via EF Core)
-Tables: `Transactions`, `CategoryRules`, `Settings` (single row), `DismissedSuggestions`, `Imports`. Insight and AI responses are cached in memory, keyed by `(month, dataVersion, language)`.
+Evidence attached to API output: `{ transaction_ids: Guid[], figures: { key, label, amount }[] }`.

@@ -44,6 +44,12 @@ userApi.MapMeEndpoints();
 userApi.MapImportEndpoints();
 userApi.MapTransactionEndpoints();
 userApi.MapInsightEndpoints();
+userApi.MapAnalyticsEndpoints();
+userApi.MapHomeEndpoints();
+userApi.MapWrappedEndpoints();
+userApi.MapGoalEndpoints();
+userApi.MapChallengeEndpoints();
+userApi.MapChatEndpoints();
 
 app.Run();
 

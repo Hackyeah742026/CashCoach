@@ -42,7 +42,9 @@ public sealed class TransactionImportService(AppDbContext db, Categorizer catego
             fresh.Add((row, MerchantNormalizer.Normalize(row.Description)));
         }
 
-        var matches = await categorizer.CategorizeAsync(fresh.Select(item => item.Normalized.MerchantKey), cancellationToken);
+        // Transfer titles can carry personal names, so their keys never leave the server.
+        var transferKeys = fresh.Where(item => item.Normalized.Channel == Channel.Transfer).Select(item => item.Normalized.MerchantKey).ToHashSet();
+        var matches = await categorizer.CategorizeAsync(fresh.Select(item => item.Normalized.MerchantKey), cancellationToken, transferKeys);
         var rules = await db.UserMerchantRules
             .Where(r => r.UserId == userId)
             .ToDictionaryAsync(r => r.Merchant, r => r.Category, cancellationToken);
@@ -72,6 +74,11 @@ public sealed class TransactionImportService(AppDbContext db, Categorizer catego
 
         await db.SaveChangesAsync(cancellationToken);
         var recurring = await recurringSync.RefreshAsync(userId, cancellationToken);
+        if (recurring.SalaryDay is { } salaryDay && await db.Users.FindAsync([userId], cancellationToken) is { Payday: null } user)
+        {
+            user.Payday = salaryDay;
+            await db.SaveChangesAsync(cancellationToken);
+        }
 
         return new ImportResult(
             fresh.Count,

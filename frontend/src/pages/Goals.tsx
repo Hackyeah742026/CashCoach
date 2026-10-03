@@ -45,7 +45,7 @@ export function Goals() {
   const openEdit = (goal: Goal) =>
     setSheet({
       editing: goal,
-      draft: { name: goal.name, emoji: goal.emoji, target: moneyToInput(goal.target), saved: moneyToInput(goal.saved), deadline: goal.deadline },
+      draft: { name: goal.name, emoji: goal.emoji, target: moneyToInput(goal.target), saved: moneyToInput(goal.saved), deadline: goal.deadline ?? '' },
     })
 
   const hasEmergencyFund = goals?.some((g) => g.emoji === '🛟')

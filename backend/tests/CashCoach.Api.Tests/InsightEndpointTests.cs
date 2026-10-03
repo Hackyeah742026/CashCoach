@@ -46,8 +46,11 @@ public class InsightEndpointTests
         var patched = await (await client.PatchJsonAsync($"/api/subscriptions/{spotify.Id}", new { still_using = false })).ReadAsync<UpdateSubscriptionResponse>();
         var after = await (await client.GetAsync("/api/subscriptions")).ReadAsync<SubscriptionsResponse>();
 
-        patched.Should().Be(new UpdateSubscriptionResponse(spotify.Id, false, null));
+        var opportunities = await (await client.GetAsync("/api/opportunities")).ReadAsync<OpportunitiesResponse>();
+
+        patched.Should().Be(new UpdateSubscriptionResponse(spotify.Id, false, $"unused_subscription:{spotify.Id}"));
         after.Items.Single(s => s.Id == spotify.Id).UserConfirmed.Should().BeFalse();
+        opportunities.Items.Should().Contain(o => o.Id == patched.NewOpportunityId && o.MonthlySaving == 23.99m);
         (await client.PatchJsonAsync($"/api/subscriptions/{Guid.NewGuid()}", new { still_using = true })).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 

@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
+using CashCoach.Api.Contracts;
 using CashCoach.Api.Errors;
 using CashCoach.Api.Users;
 using CashCoach.Infrastructure.Persistence;
@@ -10,6 +12,7 @@ namespace CashCoach.Api.Configuration;
 public static class ApiSetup
 {
     private const string DefaultFrontendOrigin = "http://localhost:5173";
+    public const int ChatRequestsPerMinute = 20;
 
     /// <summary>JSON, CORS, error handling, OpenAPI and per-request user resolution.</summary>
     public static IServiceCollection AddCashCoachApi(this IServiceCollection services, IConfiguration configuration)
@@ -30,6 +33,19 @@ public static class ApiSetup
         services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
         services.AddProblemDetails();
         services.AddExceptionHandler<ApiExceptionHandler>();
+
+        services.AddRateLimiter(options =>
+        {
+            options.AddPolicy(Endpoints.ChatEndpoints.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Request.Headers[CurrentUserFilter.HeaderName].ToString(),
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = ChatRequestsPerMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new ErrorResponse(new ErrorDetail("rate_limited", $"At most {ChatRequestsPerMinute} chat requests per minute.")), cancellationToken);
+            };
+        });
 
         services.AddOpenApi();
         services.AddScoped<CurrentUser>();
@@ -52,16 +68,31 @@ public static class ApiSetup
         return services;
     }
 
+    /// <summary>
+    /// Creates the schema. There are no migrations: a database from an older schema version (SQLite <c>user_version</c>)
+    /// only holds demo data, so it is dropped and recreated.
+    /// </summary>
     public static async Task EnsureDatabaseCreatedAsync(this WebApplication app)
     {
         await using var scope = app.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreatedAsync();
+        var database = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database;
+        if (!await database.EnsureCreatedAsync() && await ReadSchemaVersionAsync(database) != AppDbContext.SchemaVersion)
+        {
+            await database.EnsureDeletedAsync();
+            await database.EnsureCreatedAsync();
+        }
+
+        await database.ExecuteSqlRawAsync($"PRAGMA user_version = {AppDbContext.SchemaVersion}");
     }
+
+    private static async Task<int> ReadSchemaVersionAsync(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade database) =>
+        await database.SqlQueryRaw<int>("SELECT user_version AS Value FROM pragma_user_version").SingleAsync();
 
     public static WebApplication UseCashCoachApi(this WebApplication app)
     {
         app.UseCors();
         app.UseExceptionHandler();
+        app.UseRateLimiter();
         return app;
     }
 }

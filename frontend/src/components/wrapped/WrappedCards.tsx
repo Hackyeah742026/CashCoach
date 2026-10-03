@@ -1,6 +1,6 @@
 import { ArrowRight, Share2 } from 'lucide-react'
 import { useLanguage, useT } from '../../i18n/context'
-import { CATEGORY_META, categoryLabel } from '../../lib/categories'
+import { categoryLabel, categoryMeta } from '../../lib/categories'
 import { formatMonth, formatPercent } from '../../lib/format'
 import type { Wrapped } from '../../types'
 import { AiText } from '../ui/AiText'
@@ -75,7 +75,7 @@ export function BiggestChangeCard({ data }: { data: Wrapped }) {
       {c ? (
         <>
           <span className="story__emoji" aria-hidden>
-            {CATEGORY_META[c.category].emoji}
+            {categoryMeta(c.category).emoji}
           </span>
           <h2 className="story__title">{categoryLabel(c.category, lang)}</h2>
           <span className="story__big">{formatPercent(c.changePct, lang)}</span>

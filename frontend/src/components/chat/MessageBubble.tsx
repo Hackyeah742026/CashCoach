@@ -41,7 +41,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
 
       {!isUser && message.status === 'done' && message.content && (
         <div className="msg__meta">
-          <AiBadge />
+          {message.fallback ? <span className="text-xs text-muted">{t.chat.fallback}</span> : <AiBadge />}
           {message.evidence && message.evidence.transactionIds.length > 0 && (
             <EvidenceButton
               evidence={message.evidence}

@@ -15,9 +15,11 @@ interface StatTileProps {
   increaseIsBad?: boolean
   tone?: 'neutral' | 'positive'
   hint?: string
+  /** Show the magnitude only (default). Turn off where the sign matters, e.g. a monthly deficit. */
+  absolute?: boolean
 }
 
-export function StatTile({ label, value, icon: Icon, change, increaseIsBad = false, tone = 'neutral', hint }: StatTileProps) {
+export function StatTile({ label, value, icon: Icon, change, increaseIsBad = false, tone = 'neutral', hint, absolute = true }: StatTileProps) {
   const { lang } = useLanguage()
   const hasChange = change !== undefined && change !== null && change !== 0
   const bad = hasChange && (increaseIsBad ? change > 0 : change < 0)
@@ -28,7 +30,7 @@ export function StatTile({ label, value, icon: Icon, change, increaseIsBad = fal
         {Icon && <Icon aria-hidden />}
         {label}
       </span>
-      <MoneyText value={value} absolute whole className="stat-tile__value" tone={tone} />
+      <MoneyText value={value} absolute={absolute} whole className="stat-tile__value" tone={tone} />
       {hasChange && (
         <span className={clsx('badge', bad ? 'badge--caution' : 'badge--positive')} style={{ alignSelf: 'flex-start' }}>
           {formatPercent(change, lang)} {hint}

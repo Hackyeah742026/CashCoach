@@ -32,7 +32,7 @@ export function SavingsCard({ suggestion: s, onDismiss }: SavingsCardProps) {
           <span className="text-sm text-muted">{t.common.perMonth}</span>
         </span>
         <span className={clsx('badge', DIFFICULTY_BADGE[s.difficulty])}>{t.home.difficulty[s.difficulty]}</span>
-        <AiBadge />
+        {s.aiGenerated !== false && <AiBadge />}
         <EvidenceButton evidence={s.evidence} subject={s.title} />
       </div>
     </article>

@@ -5,10 +5,12 @@ using Microsoft.EntityFrameworkCore;
 namespace CashCoach.Infrastructure.Transactions;
 
 /// <param name="Query">Case-insensitive text matched against the merchant and the raw description.</param>
-public sealed record TransactionFilter(DateOnly? From, DateOnly? To, Category? Category, string? Query, int Limit, int Offset);
+/// <param name="Ids">Only these transactions (for evidence), or <c>null</c> for all.</param>
+public sealed record TransactionFilter(DateOnly? From, DateOnly? To, Category? Category, string? Query, int Limit, int Offset, IReadOnlyList<Guid>? Ids = null);
 
 /// <param name="Total">Number of transactions matching the filter, before paging.</param>
-public sealed record TransactionPage(int Total, IReadOnlyList<Transaction> Items);
+/// <param name="SumGr">Signed sum of all matching transactions, before paging.</param>
+public sealed record TransactionPage(int Total, long SumGr, IReadOnlyList<Transaction> Items);
 
 public sealed class TransactionService(AppDbContext db)
 {
@@ -30,6 +32,11 @@ public sealed class TransactionService(AppDbContext db)
             query = query.Where(t => t.Category == category);
         }
 
+        if (filter.Ids is { } ids)
+        {
+            query = query.Where(t => ids.Contains(t.Id));
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.Query))
         {
             var text = filter.Query.Trim().ToLower();
@@ -37,6 +44,7 @@ public sealed class TransactionService(AppDbContext db)
         }
 
         var total = await query.CountAsync(cancellationToken);
+        var sum = await query.SumAsync(t => t.AmountGr, cancellationToken);
         var items = await query
             .OrderByDescending(t => t.Date)
             .ThenBy(t => t.Id)
@@ -44,7 +52,7 @@ public sealed class TransactionService(AppDbContext db)
             .Take(filter.Limit)
             .ToListAsync(cancellationToken);
 
-        return new TransactionPage(total, items);
+        return new TransactionPage(total, sum, items);
     }
 
     /// <summary>

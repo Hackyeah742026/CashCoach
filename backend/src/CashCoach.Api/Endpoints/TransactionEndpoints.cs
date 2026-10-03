@@ -14,7 +14,7 @@ public static class TransactionEndpoints
     public static RouteGroupBuilder MapTransactionEndpoints(this RouteGroupBuilder api)
     {
         api.MapGet("/transactions", async (
-                DateOnly? from, DateOnly? to, string? category, string? q, int? limit, int? offset,
+                DateOnly? from, DateOnly? to, string? category, string? q, string? ids, int? limit, int? offset,
                 CurrentUser currentUser, TransactionService transactions, CancellationToken cancellationToken) =>
             {
                 var pageSize = limit ?? DefaultLimit;
@@ -34,7 +34,17 @@ public static class TransactionEndpoints
                 }
 
                 Category? categoryFilter = category is null ? null : ParseEnum<Category>(category, "category");
-                var filter = new TransactionFilter(from, to, categoryFilter, q, pageSize, offset ?? 0);
+                List<Guid>? idFilter = null;
+                if (ids is not null)
+                {
+                    idFilter = [];
+                    foreach (var part in ids.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    {
+                        idFilter.Add(Guid.TryParse(part, out var id) ? id : throw BadRequest("invalid_ids", "'ids' must be comma-separated transaction ids."));
+                    }
+                }
+
+                var filter = new TransactionFilter(from, to, categoryFilter, q, pageSize, offset ?? 0, idFilter);
                 return TypedResults.Ok(TransactionListResponse.From(await transactions.ListAsync(currentUser.Id, filter, cancellationToken)));
             })
             .WithName("ListTransactions")

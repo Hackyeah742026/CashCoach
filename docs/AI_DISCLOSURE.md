@@ -8,7 +8,7 @@ All code, prompts, designs and documents in this repository were created during 
 ## AI used inside the product
 | Resource | Purpose | License / Terms |
 |---|---|---|
-| Google Gemini API (via `Google.GenAI` SDK) | Transaction categorization (long tail), spending explanations, savings phrasing and ranking, affordability explanation, chat coach with function calling | Google Gemini API Additional Terms of Service |
+| Google Gemini API (via `Google.GenAI` SDK), model `gemini-3.5-flash-lite` by default (configurable with `GEMINI_MODEL`) | Categorization of unknown merchants, chat coach with function calling, Wrapped captions and savings explanations. Every number in AI text is checked against computed facts | Google Gemini API Additional Terms of Service |
 
 ## AI tools used during development
 | Tool | How we used it |
@@ -32,6 +32,8 @@ The team reviewed all AI-assisted code and can explain and defend every part of 
 | `FuzzySharp` 2.0.2 | Fuzzy merchant matching | MIT |
 | `CsvHelper` 33.1.0 | Bank CSV parsing | MS-PL / Apache-2.0 |
 | `Bogus` 35.6.5 | Synthetic demo data generation | MIT |
+| ASP.NET Core rate limiting (`System.Threading.RateLimiting`, part of the framework) | 20 chat requests per minute per user | MIT |
+| `Microsoft.Extensions.Caching.Memory` (via EF Core) | Caching AI captions | MIT |
 | xUnit 2.9.2 | Tests | Apache-2.0 |
 | `FluentAssertions` 7.2.2 | Test assertions | Apache-2.0 |
 | `Microsoft.AspNetCore.Mvc.Testing` 9.0.20 | API integration tests | MIT |

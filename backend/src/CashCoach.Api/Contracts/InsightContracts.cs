@@ -52,8 +52,8 @@ public sealed record SubscriptionsResponse(decimal MonthlyTotal, IReadOnlyList<S
 
 public sealed record UpdateSubscriptionRequest(bool? StillUsing);
 
-/// <param name="NewOpportunityId">Always <c>null</c> until savings opportunities exist.</param>
-public sealed record UpdateSubscriptionResponse(Guid Id, bool? UserConfirmed, Guid? NewOpportunityId);
+/// <param name="NewOpportunityId">When the user no longer uses it, the id of the new <c>unused_subscription</c> opportunity in <c>GET /opportunities</c>; otherwise <c>null</c>.</param>
+public sealed record UpdateSubscriptionResponse(Guid Id, bool? UserConfirmed, string? NewOpportunityId);
 
 /// <param name="Instalment">Positive złoty amount of one instalment.</param>
 /// <param name="Remaining">Positive złoty amount still to pay.</param>

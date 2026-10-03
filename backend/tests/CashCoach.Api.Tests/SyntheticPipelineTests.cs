@@ -13,7 +13,7 @@ public class SyntheticPipelineTests
     public static TheoryData<Persona> Personas()
     {
         var data = new TheoryData<Persona>();
-        foreach (var persona in Enum.GetValues<Persona>())
+        foreach (var persona in SyntheticPersonas.All.Select(p => p.Persona))
         {
             data.Add(persona);
         }
@@ -90,7 +90,7 @@ public class SyntheticPipelineTests
     public void Checked_in_sample_csvs_match_the_generator()
     {
         var directory = SampleCsvWriter.FindSamplesDirectory(AppContext.BaseDirectory);
-        foreach (var persona in Enum.GetValues<Persona>())
+        foreach (var persona in SyntheticPersonas.All.Select(p => p.Persona))
         {
             var path = Path.Combine(directory, SampleCsvWriter.FileName(persona));
             File.ReadAllText(path).Should().Be(SyntheticDataGenerator.GenerateCsv(persona));

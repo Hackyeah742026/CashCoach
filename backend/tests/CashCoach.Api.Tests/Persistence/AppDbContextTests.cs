@@ -26,7 +26,7 @@ public sealed class AppDbContextTests : IDisposable
             .ToList();
 
         tables.Should().BeEquivalentTo(
-            "users", "transactions", "recurring_groups", "goals", "challenges", "chat_messages", "user_merchant_rules");
+            "users", "transactions", "recurring_groups", "goals", "challenges", "chat_messages", "user_merchant_rules", "dismissals");
     }
 
     [Fact]

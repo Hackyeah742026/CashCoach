@@ -6,6 +6,9 @@ namespace CashCoach.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    /// <summary>Bump when the model changes; an older database is recreated on startup.</summary>
+    public const int SchemaVersion = 2;
+
     public DbSet<User> Users => Set<User>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<RecurringGroup> RecurringGroups => Set<RecurringGroup>();
@@ -13,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<UserMerchantRule> UserMerchantRules => Set<UserMerchantRule>();
+    public DbSet<Dismissal> Dismissals => Set<Dismissal>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -69,6 +73,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             rule.ToTable("user_merchant_rules");
             rule.HasOne<User>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
             rule.HasIndex(r => new { r.UserId, r.Merchant }).IsUnique();
+        });
+
+        modelBuilder.Entity<Dismissal>(dismissal =>
+        {
+            dismissal.ToTable("dismissals");
+            dismissal.HasOne<User>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
+            dismissal.HasIndex(d => new { d.UserId, d.Key }).IsUnique();
         });
 
         foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(entity => entity.GetProperties()))

@@ -24,6 +24,18 @@ public static class DemoPersonas
         Persona.BnplHeavy => "Maja",
         _ => throw new ArgumentOutOfRangeException(nameof(persona), persona, null),
     };
+
+    /// <summary>
+    /// Account balance on the last day of the synthetic history (CSV exports carry no balance).
+    /// Chosen so the forecast tells each persona's story: student tight, first job fine, BNPL-heavy runs out before payday.
+    /// </summary>
+    public static long BalanceOf(Persona persona) => persona switch
+    {
+        Persona.Student => 182_000,
+        Persona.FirstJob => 610_000,
+        Persona.BnplHeavy => 210_000,
+        _ => throw new ArgumentOutOfRangeException(nameof(persona), persona, null),
+    };
 }
 
 public sealed class DemoLoginService(
@@ -42,6 +54,7 @@ public sealed class DemoLoginService(
                 Name = DemoPersonas.NameOf(persona),
                 Persona = persona,
                 Language = "pl",
+                BalanceGr = DemoPersonas.BalanceOf(persona),
                 CreatedAt = timeProvider.GetUtcNow().UtcDateTime,
             };
             db.Users.Add(user);
@@ -55,5 +68,37 @@ public sealed class DemoLoginService(
         }
 
         return await profiles.GetAsync(user, cancellationToken);
+    }
+
+    /// <summary>A new user without data, for people who import their own CSV.</summary>
+    public async Task<UserProfile> CreateUserAsync(string? name, string language, CancellationToken cancellationToken)
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = string.IsNullOrWhiteSpace(name) ? (language == "en" ? "You" : "Ty") : name.Trim(),
+            Persona = Persona.Custom,
+            Language = language,
+            CreatedAt = timeProvider.GetUtcNow().UtcDateTime,
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync(cancellationToken);
+        return await profiles.GetAsync(user, cancellationToken);
+    }
+
+    /// <summary>
+    /// Imports a persona's synthetic history into an existing user ("try it with demo data").
+    /// The payday follows the demo salary; the persona's balance is used unless the user already set one.
+    /// </summary>
+    public async Task<ImportResult> ImportDemoAsync(Guid userId, Persona persona, CancellationToken cancellationToken)
+    {
+        await using var csv = SyntheticDataGenerator.GenerateCsvStream(persona);
+        var result = await importService.ImportAsync(userId, csv, cancellationToken);
+
+        var user = await db.Users.SingleAsync(u => u.Id == userId, cancellationToken);
+        user.Payday = result.Recurring.SalaryDay ?? user.Payday;
+        user.BalanceGr ??= DemoPersonas.BalanceOf(persona);
+        await db.SaveChangesAsync(cancellationToken);
+        return result;
     }
 }

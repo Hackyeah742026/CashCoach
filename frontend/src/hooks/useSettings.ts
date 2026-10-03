@@ -33,7 +33,8 @@ export function useChangeLanguage() {
 export function useImportTransactions() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (file: File | null) => (file ? api.importTransactions(file) : api.importDemoData()),
+    /** A CSV file, or a demo persona to load synthetic data for. */
+    mutationFn: (source: File | api.DemoPersona) => (source instanceof File ? api.importTransactions(source) : api.importDemoData(source)),
     // Refetch inactive queries too (e.g. settings.onboarded) before the result screen shows,
     // otherwise the route guard would see stale settings and bounce back to onboarding.
     onSuccess: () => qc.invalidateQueries({ refetchType: 'all' }),

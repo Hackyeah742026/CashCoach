@@ -119,7 +119,7 @@ function GoalForm({ initial, editing, onDone }: { initial: GoalDraft; editing?: 
         <div className="goal-preview" aria-live="polite" style={{ opacity: preview.isFetching ? 0.6 : 1 }}>
           <span className="goal-preview__needs">{t.goals.needs(formatMoney(preview.data.requiredPerWeek, lang, { whole: true }))}</span>
           <VerdictCard verdict={preview.data.verdict} title={t.goals.verdict[preview.data.verdict]} />
-          <AiText>
+          <AiText aiGenerated={preview.data.aiGenerated ?? true}>
             <p className="text-sm">{preview.data.aiText}</p>
             {preview.data.verdict !== 'green' && preview.data.plan.length > 0 && (
               <ul className="tips text-sm">

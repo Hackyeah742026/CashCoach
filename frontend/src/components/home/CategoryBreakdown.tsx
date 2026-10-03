@@ -1,5 +1,5 @@
 import { useLanguage, useT } from '../../i18n/context'
-import { CATEGORY_META, categoryLabel } from '../../lib/categories'
+import { categoryLabel, categoryMeta } from '../../lib/categories'
 import { formatPercent } from '../../lib/format'
 import type { Summary } from '../../types'
 import { MoneyText } from '../ui/MoneyText'
@@ -19,9 +19,9 @@ export function CategoryBreakdown({ summary }: { summary: Summary }) {
         <ul role="list" className="cat-list">
           {summary.byCategory.map((cat) => (
             <li key={cat.category} className="cat-row">
-              <span className="cat-row__dot" style={{ background: CATEGORY_META[cat.category].color }} aria-hidden />
+              <span className="cat-row__dot" style={{ background: categoryMeta(cat.category).color }} aria-hidden />
               <span className="cat-row__name">
-                {CATEGORY_META[cat.category].emoji} {categoryLabel(cat.category, lang)}
+                {categoryMeta(cat.category).emoji} {categoryLabel(cat.category, lang)}
               </span>
               <span className="text-xs text-subtle">
                 {cat.changePct !== null && cat.changePct !== 0 ? formatPercent(cat.changePct, lang) : ''}

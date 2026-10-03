@@ -11,7 +11,14 @@ export type MonthKey = string
 
 export type Language = 'pl' | 'en'
 
+/** Union of the backend's categories (docs/API.md) and older mock-only ones. */
 export type Category =
+  | 'restaurants'
+  | 'rent'
+  | 'utilities'
+  | 'health'
+  | 'transfers'
+  | 'salary'
   | 'groceries'
   | 'food_delivery'
   | 'restaurants_cafes'
@@ -164,6 +171,8 @@ export interface SavingSuggestion {
   monthlyImpact: Money
   difficulty: Difficulty
   evidence: Evidence
+  /** false when the rationale is a template (no AI); undefined in mocks */
+  aiGenerated?: boolean
 }
 
 export interface SavingsResponse {
@@ -253,7 +262,8 @@ export interface Goal {
   emoji: string
   target: Money
   saved: Money
-  deadline: IsoDate
+  /** null for goals without a deadline (e.g. created in chat) */
+  deadline: IsoDate | null
   requiredPerWeek: Money
   status: GoalStatus
   /** Present when status is "behind" */
@@ -280,6 +290,8 @@ export interface GoalPreview {
   verdict: Verdict
   plan: { savingId: string; title: string; monthlyImpact: Money }[]
   aiText: string
+  /** false when aiText is a template; undefined in mocks */
+  aiGenerated?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -294,6 +306,8 @@ export interface ChatMessage {
   toolsUsed?: string[]
   evidence?: Evidence
   status?: 'streaming' | 'done' | 'error'
+  /** Template answer: the model was unavailable or failed the fact check */
+  fallback?: boolean
 }
 
 /** Server-sent events from POST /chat */
@@ -301,5 +315,5 @@ export type ChatEvent =
   | { type: 'delta'; text: string }
   | { type: 'tool'; name: string }
   | { type: 'evidence'; evidence: Evidence }
-  | { type: 'done'; factCheck: FactCheck }
+  | { type: 'done'; factCheck: FactCheck; conversationId?: string; fallback?: boolean }
   | { type: 'error'; message: string }

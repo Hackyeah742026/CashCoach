@@ -14,6 +14,17 @@ internal static class RequestValidation
                 $"'{field}' must be one of: {string.Join(", ", SnakeCaseEnum<TEnum>.AllNames)}.",
                 StatusCodes.Status400BadRequest);
 
+    /// <summary>Złoty with at most 2 decimals to grosze.</summary>
+    public static long ToGrosze(decimal? zloty, string field, decimal min = decimal.MinValue, decimal max = 10_000_000m)
+    {
+        if (zloty is not { } value || decimal.Round(value, 2) != value || value < min || value > max)
+        {
+            throw BadRequest($"invalid_{field}", $"'{field}' must be an amount in złoty with at most 2 decimals, from {min:0.##} to {max:0.##}.");
+        }
+
+        return (long)(value * 100);
+    }
+
     public static ApiException BadRequest(string code, string message) => new(code, message, StatusCodes.Status400BadRequest);
 
     public static ApiException NotFound(string code, string message) => new(code, message, StatusCodes.Status404NotFound);
