@@ -1,5 +1,5 @@
 import { useT } from '../../i18n/context'
-import { CATEGORY_META, categoryLabel } from '../../lib/categories'
+import { categoryLabel, categoryMeta } from '../../lib/categories'
 import type { CategoryTotal, Language, Money } from '../../types'
 import { MoneyText } from '../ui/MoneyText'
 
@@ -25,7 +25,7 @@ export function SpendingChart({ categories, total, lang, size = 180 }: SpendingC
   const segments = categories.reduce<{ key: string; len: number; offset: number; color: string }[]>((acc, cat) => {
     const offset = acc.length ? acc[acc.length - 1].offset + acc[acc.length - 1].len + gap : 0
     const len = Math.max(0, (Math.abs(Number(cat.amount)) / sum) * c - gap)
-    acc.push({ key: cat.category, len, offset, color: CATEGORY_META[cat.category].color })
+    acc.push({ key: cat.category, len, offset, color: categoryMeta(cat.category).color })
     return acc
   }, [])
 

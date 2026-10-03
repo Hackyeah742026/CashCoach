@@ -8,6 +8,14 @@ interface CategoryMeta {
 }
 
 export const CATEGORY_META: Record<Category, CategoryMeta> = {
+  // Backend categories (docs/API.md)
+  restaurants: { emoji: '☕', color: 'var(--color-cat-restaurants)', label: { pl: 'Kawiarnie i restauracje', en: 'Cafés & restaurants' } },
+  rent: { emoji: '🏠', color: 'var(--color-cat-rent-bills)', label: { pl: 'Czynsz', en: 'Rent' } },
+  utilities: { emoji: '💡', color: 'var(--color-cat-rent-bills)', label: { pl: 'Rachunki', en: 'Bills' } },
+  health: { emoji: '💊', color: 'var(--color-cat-health)', label: { pl: 'Zdrowie i uroda', en: 'Health & beauty' } },
+  transfers: { emoji: '👥', color: 'var(--color-cat-other)', label: { pl: 'Przelewy', en: 'Transfers' } },
+  salary: { emoji: '💼', color: 'var(--color-cat-groceries)', label: { pl: 'Wynagrodzenie', en: 'Salary' } },
+  // Shared with the mocks
   groceries: { emoji: '🛒', color: 'var(--color-cat-groceries)', label: { pl: 'Zakupy spożywcze', en: 'Groceries' } },
   food_delivery: { emoji: '🛵', color: 'var(--color-cat-food-delivery)', label: { pl: 'Dostawy jedzenia', en: 'Food delivery' } },
   restaurants_cafes: { emoji: '☕', color: 'var(--color-cat-restaurants)', label: { pl: 'Kawiarnie i restauracje', en: 'Cafés & restaurants' } },
@@ -29,6 +37,13 @@ export const CATEGORY_META: Record<Category, CategoryMeta> = {
   uncategorized: { emoji: '❔', color: 'var(--color-cat-other)', label: { pl: 'Bez kategorii', en: 'Uncategorized' } },
 }
 
+const UNKNOWN: CategoryMeta = { emoji: '📦', color: 'var(--color-cat-other)', label: { pl: 'Inne', en: 'Other' } }
+
+/** Metadata for a category, tolerating values the frontend doesn't know yet. */
+export function categoryMeta(category: Category): CategoryMeta {
+  return CATEGORY_META[category] ?? UNKNOWN
+}
+
 export function categoryLabel(category: Category, lang: Language) {
-  return CATEGORY_META[category].label[lang]
+  return categoryMeta(category).label[lang]
 }

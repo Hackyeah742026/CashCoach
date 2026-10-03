@@ -21,8 +21,9 @@ public sealed class Categorizer(IMerchantDictionary dictionary, ILlmCategorizer 
     public const int FuzzyThreshold = 85;
     public const int LlmBatchSize = 50;
 
+    /// <param name="localOnlyKeys">Keys never sent to the LLM (e.g. from bank-transfer titles, which may hold personal names); unresolved ones become <see cref="Category.Other"/>.</param>
     public async Task<IReadOnlyDictionary<string, MerchantMatch>> CategorizeAsync(
-        IEnumerable<string> merchantKeys, CancellationToken cancellationToken)
+        IEnumerable<string> merchantKeys, CancellationToken cancellationToken, IReadOnlySet<string>? localOnlyKeys = null)
     {
         var matches = new Dictionary<string, MerchantMatch>();
         var unresolved = new List<string>();
@@ -37,7 +38,7 @@ public sealed class Categorizer(IMerchantDictionary dictionary, ILlmCategorizer 
             {
                 matches[key] = new MerchantMatch(fuzzy.Name, fuzzy.Category, CategorySource.Fuzzy);
             }
-            else if (key == MerchantNormalizer.UnknownMerchantKey)
+            else if (key == MerchantNormalizer.UnknownMerchantKey || localOnlyKeys?.Contains(key) == true)
             {
                 matches[key] = new MerchantMatch(DisplayName(key), Category.Other, CategorySource.Other);
             }

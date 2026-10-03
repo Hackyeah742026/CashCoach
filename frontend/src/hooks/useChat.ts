@@ -12,6 +12,8 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  // The backend keeps the history once a conversation exists
+  const conversationRef = useRef<string | null>(null)
 
   // Abort an in-flight stream when the chat unmounts
   useEffect(() => () => abortRef.current?.abort(), [])
@@ -35,7 +37,7 @@ export function useChat() {
       abortRef.current = controller
 
       try {
-        for await (const event of streamChat(history, lang, controller.signal)) {
+        for await (const event of streamChat(history, lang, controller.signal, conversationRef.current)) {
           switch (event.type) {
             case 'delta':
               patchMessage(assistantId, (m) => ({ ...m, content: m.content + event.text }))
@@ -47,7 +49,8 @@ export function useChat() {
               patchMessage(assistantId, (m) => ({ ...m, evidence: event.evidence }))
               break
             case 'done':
-              patchMessage(assistantId, (m) => ({ ...m, status: 'done' }))
+              if (event.conversationId) conversationRef.current = event.conversationId
+              patchMessage(assistantId, (m) => ({ ...m, status: 'done', fallback: event.fallback }))
               break
             case 'error':
               patchMessage(assistantId, (m) => ({ ...m, status: 'error' }))
@@ -70,6 +73,7 @@ export function useChat() {
 
   const reset = useCallback(() => {
     abortRef.current?.abort()
+    conversationRef.current = null
     setMessages([])
   }, [])
 

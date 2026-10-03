@@ -1,90 +1,83 @@
 # AI Pipeline
 
-How Google Gemini is used in CashCoach, what it gets as input, what it returns, and how its output is checked.
+How Google Gemini is used in CashCoach, what it gets, what it returns, and how its output is checked. Code: `backend/src/CashCoach.Infrastructure/Ai/` and `backend/src/CashCoach.Core/Ai/`.
 
 ## Model and settings
 
 | Setting | Value |
 |---|---|
-| Provider / SDK | Google Gemini API · official `Google.GenAI` NuGet package |
-| Model | configurable: `Gemini:Model` |
-| Key | `GEMINI_API_KEY` from the root `.env` (loaded with `DotNetEnv`) or an env var in deployment |
-| Temperature | 0 for JSON tasks (categorization) · 0.3 for text (insights, savings, affordability, chat) |
-| Output | JSON mode with a response schema for every non-chat task. Streaming for chat |
-| Tools | Function calling, client-side, read-only |
+| SDK | Official `Google.GenAI` NuGet package, behind `ILlmClient` (`Core/Abstractions`) |
+| Model | `GEMINI_MODEL`, default `gemini-3.5-flash-lite`: about 2 s per chat answer and a usable free tier. `gemini-3.8-flash` allows only 20 free requests a day; `gemini-2.5-flash` is closed to new keys |
+| Key | `GEMINI_API_KEY` from the root `.env` (`DotNetEnv`) or an env var. Never logged |
+| Temperature | 0.3 for text, 0 for JSON tasks |
+| Output limit | 400 tokens for chat, 1024 otherwise. Thinking level `low` on Gemini 3 models |
+| Timeout / retry | 15 s per call; one retry on network errors, timeouts and 5xx. 4xx (quota, bad request) is not retried |
+| No key, quota, outage | `LlmUnavailableException` → every feature falls back to deterministic templates |
 
-Model notes:
-- Always check the finish reason (safety block, max tokens) before reading the content.
-- Keep the system instruction and tool list stable. Volatile data (dates, figures) goes in the user turn.
+## The AI tasks
 
-## The five AI tasks
+### 1. Categorize unknown merchants (`GeminiCategorizer`)
+- **When:** on import, only for normalized merchant keys the dictionary and fuzzy match (FuzzySharp ≥ 85) could not resolve. Up to 50 keys per call.
+- **Input:** a JSON array of keys, e.g. `["PHU POLMAX"]`. Keys from bank-transfer titles are **never sent** (they may contain personal names) and become `other`.
+- **Output (JSON mode):** `{ "KEY": "category" }`. Unknown categories are ignored; anything unanswered stays `other`. Answers are learned into the in-memory dictionary.
+- **Prompt:** `Prompts/categorize.md`.
 
-### 1. Categorize unknown merchants
-- **When:** after import, only for transactions the rules left as `Uncategorized`.
-- **Input:** batch of `{id, merchant, rawDescription (anonymized), amount, date}` plus the fixed category list.
-- **Output (schema):** `[{id, category, confidence: 0–1, normalizedMerchant}]`.
-- **Guardrails:** `category` is an enum of our categories. If `confidence < 0.6`, it's shown as "needs review". Users' corrections are stored as rules, so the AI isn't asked again for that merchant.
-- **Prompt:** `Prompts/categorize_transactions.md`
+### 2. Chat coach (`ChatAgent` + `ToolRegistry`)
+- **Input:** system prompt `Prompts/chat_system.md` (`{today}` = latest transaction date, `{lang_name}`), the last 10 messages of the conversation, and the question with account numbers, cards, phones and e-mails scrubbed (`Anonymizer`).
+- **Tools** (the user id is injected by the server; the model never chooses it):
 
-### 2. Explain spending ("Where did my money go?")
-- **Input:** computed facts from `SpendingAnalysisService`, each with a stable key, e.g. `{"key":"cat.food_delivery.month","value":"412.30"}`, plus top merchants and anomalies.
-- **Output (schema):** `{headline, bullets:[{text, factKeys[], transactionIds[]}], tone}`.
-- **Guardrails:** fact-check (below). Max 5 bullets. No judgemental language.
-- **Prompt:** `Prompts/explain_spending.md`
+| Tool | Returns (computed in Core) |
+|---|---|
+| `get_balance` | balance, safe-to-spend, safe per day, buffer, bills before payday, next payday, days left |
+| `get_spending` | totals by category and merchant for a month or range, up to 20 transactions (date, merchant, category, amount) |
+| `get_upcoming_payments` | bills, subscriptions, rent, BNPL instalments before payday |
+| `forecast_until_payday` | projected balance on payday, run-out date, status, typical daily spending |
+| `simulate_purchase` | verdict green/yellow/red, safe-to-spend, left after / shortfall, forecast after, goal delays |
+| `simulate_change` | weekly/monthly spending now, monthly and yearly saving, goal reach dates |
+| `list_subscriptions` | subscriptions, monthly total, duplicates |
+| `get_goals` | goal progress, status, required per week, reach date |
+| `create_goal` | creates a goal (only when asked) |
+| `get_savings_opportunities` | the computed savings ideas |
 
-### 3. Find savings
-- **Input:** *candidate* savings from `SavingsFinderService`, each with a computed `monthlyImpact` and evidence.
-- **AI role:** pick the 3–5 most relevant ones for this user, phrase them concretely and kindly, and rate their difficulty. It **cannot** create new candidates with new numbers.
-- **Output (schema):** `[{candidateId, title, rationale, difficulty: easy|medium|hard}]`. The amounts are joined back from the candidates by ID.
-- **Prompt:** `Prompts/find_savings.md`
+- **Loop:** up to 5 tool rounds, then the model must answer. Tool results go back as function responses; Gemini's own content (thought signatures) is passed back unchanged.
+- **Output:** plain text in the user's language plus evidence (transaction ids and labelled figures from the tools). Stored in `chat_messages` with the facts.
 
-### 4. "Can I afford this?"
-- **Input:** `AffordabilityResult` from `AffordabilityCalculator` (verdict, safe-to-spend, breakdown, assumptions).
-- **AI role:** a 2–3 sentence explanation and 1–3 practical tips (e.g. "buy after payday on the 10th", "skip 2 deliveries"). It **cannot** change the verdict.
-- **Prompt:** `Prompts/can_i_afford.md`
+### 3. Wrapped captions and opportunity explanations (`AiCopywriter`)
+- **Input:** the computed facts (JSON, zł) and the template texts by id. Prompt `Prompts/captions.md`.
+- **Output (JSON mode):** `{ "id": "rewritten text" }`. Each text is fact-checked against the facts and its own template; a failing text keeps the template. Cached per user, month (or opportunity set) and language for 6 hours (2 minutes after a failure).
 
-### 5. Chat coach
-- Free-form questions ("How much did I spend on Bolt in March?", "Can I save 500 zł for summer?").
-- **Tools:**
+## Fact checking (`NumberValidator`)
 
-| Tool | Purpose | Returns |
-|---|---|---|
-| `get_transactions` | Filter by date range, category, merchant | list (max 50) + total |
-| `get_category_summary` | Totals per category for a period | computed sums |
-| `calculate_affordability` | Run the deterministic calculator for a hypothetical purchase | `AffordabilityResult` |
+Runs on every AI text before it reaches the user:
 
-- Tool results are collected and returned to the UI as evidence for the answer.
-- **Prompt:** `Prompts/system_coach.md` (persona, language, safety rules)
+1. Remove dates and times (`2026-10-15`, `15.10.2026`, `15 października`, `October 15`, `18:30`, `2026-09`).
+2. Extract every number in Polish or English format: `1 234,50` (space or NBSP groups), `1,234.50`, `1234.5`, `24.`, `30%`. An ambiguous `1,234` is accepted as either 1234 or 1.234; `3 120` may also be read as `3` and `120`.
+3. Ignore whole numbers 0 to 10 (counts) and years 1900 to 2100.
+4. Each remaining number must match a fact (absolute value): ±0.01 for decimals, ±1 for whole numbers (rounded złoty). Facts are every number in the tool results (plus day, month and year of ISO dates in them) and the numbers the user typed.
+5. **Chat:** on failure, the model gets a correction naming the unverified numbers and tries again (max 2 retries). Then a template answer built from the forecast is returned with `fact_check: "fallback"`. **Copy:** a failing text keeps its template. Every failure is logged with the unverified numbers.
 
-## Fact-checking layer
+## Privacy
 
-After every AI response, before it reaches the user:
+- Sent to Gemini: merchant names, categories, amounts and dates (as tool results or aggregates), merchant keys for categorization, and the user's own chat text after scrubbing.
+- Never sent: raw bank descriptions, transfer titles, IBANs and account numbers, the user's name, the user id.
+- `Anonymizer` removes IBANs (`PL61 1090 …`, 26 digits), runs of 9+ digits, phone numbers and e-mail addresses.
 
-1. Extract every money amount from the text (regex for Polish and English formats: `412,30 zł`, `PLN 412.30`, `412 zł`).
-2. Each amount must match (±0.01, or ±1 zł when the text says "około" or "≈") a value from the facts or tool results given to the model in that request.
-3. If the check fails, retry once with an error note. If it fails again, fall back to a templated, non-AI sentence built from the facts.
-4. Log failures (count only) to show reliability in the demo.
-
-## Privacy: anonymizer
-
-Runs before any data is sent to Gemini:
-- removes IBANs and account numbers (`\d{26}`, `PL\d{26}`), card numbers, phone numbers;
-- strips personal names from transfer titles ("Przelew od JAN KOWALSKI" becomes "Przelew od [osoba]");
-- sends merchant, category, amount, date and transaction ID only. Balances are sent only for affordability.
+## Safety (system prompt)
+Coaching only: no investment, credit, loan or specific product recommendations; never suggests taking new debt or BNPL; does not ask for personal data. Tested live: "Polecisz mi jakąś kartę kredytową albo kredyt?" gets a refusal plus an offer of budgeting help.
 
 ## Prompt files
 
 | File | Used by |
 |---|---|
-| `system_coach.md` | all tasks: persona, language, safety rules, "never invent numbers" |
-| `categorize_transactions.md` | task 1 |
-| `explain_spending.md` | task 2 |
-| `find_savings.md` | task 3 |
-| `can_i_afford.md` | task 4 |
+| `chat_system.md` | chat: persona, language, number rules, tool guide, safety |
+| `categorize.md` | merchant categorization |
+| `captions.md` | Wrapped captions and opportunity explanations |
 
-Persona: friendly, direct, non-judgemental older-sibling tone. Answers in the user's language (PL or EN). Never recommends specific financial products, loans or investments. Adds a gentle nudge to seek professional help when it detects debt stress signals (repeated BNPL, overdraft).
+Prompts are embedded resources (`CashCoach.Infrastructure.csproj`), loaded with `PromptLibrary`.
 
-## Cost and latency (estimate)
-- Import of about 300 transactions: 1 categorization call (only the unknown merchants).
-- Dashboard: 2 calls (insight and savings), cached per month and data version.
-- Fallback: if the API is unavailable, the app still works and shows the computed numbers with templated text.
+## Cost and latency
+- Import of about 200 transactions: at most 1 categorization call (only unknown merchants).
+- Dashboard, forecast, simulations, goals: no model call.
+- Wrapped and opportunities: 1 call each, then cached.
+- Chat: typically 2 to 3 calls per question (tool call, answer), about 2 s with `gemini-3.5-flash-lite`. The free Gemini tier allows only a few requests per minute, so quota errors fall back to templates.
+- Tests use `FakeLlmClient`; no test calls Gemini.

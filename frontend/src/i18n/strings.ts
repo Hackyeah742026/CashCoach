@@ -138,6 +138,7 @@ const plStrings = {
   chat: {
     title: 'Coach',
     newChat: 'Nowa rozmowa',
+    fallback: 'Odpowiedź z szablonu: AI jest chwilowo niedostępne, liczby są wyliczone.',
     tryAsking: 'Zapytaj na przykład:',
     suggestions: [
       'Ile poszło na Bolta w sierpniu?',
@@ -217,6 +218,8 @@ const plStrings = {
     import: 'Analizuj',
     importing: 'Analizujemy Twoje transakcje…',
     useDemo: 'Wypróbuj na danych demo',
+    demoPersona: 'Profil demo',
+    personas: { student: 'Studentka', first_job: 'Pierwsza praca', bnpl_heavy: 'Raty BNPL' },
     privacy: 'Numery kont i nazwiska usuwamy, zanim cokolwiek trafi do AI.',
     resultTitle: 'Gotowe! 🎉',
     resultImported: (n: number) => `${n} ${pl(n, 'transakcja', 'transakcje', 'transakcji')}`,
@@ -373,6 +376,7 @@ const enStrings: Dictionary = {
   chat: {
     title: 'Coach',
     newChat: 'New chat',
+    fallback: 'Template answer: AI is briefly unavailable, the numbers are computed.',
     tryAsking: 'Try asking:',
     suggestions: [
       'How much did I spend on Bolt in August?',
@@ -452,6 +456,8 @@ const enStrings: Dictionary = {
     import: 'Analyse',
     importing: 'Analysing your transactions…',
     useDemo: 'Try it with demo data',
+    demoPersona: 'Demo profile',
+    personas: { student: 'Student', first_job: 'First job', bnpl_heavy: 'BNPL instalments' },
     privacy: 'Account numbers and names are removed before anything reaches the AI.',
     resultTitle: 'Done! 🎉',
     resultImported: (n: number) => `${n} ${n === 1 ? 'transaction' : 'transactions'}`,

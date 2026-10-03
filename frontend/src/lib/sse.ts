@@ -50,16 +50,24 @@ function parseEvent(raw: string): ChatEvent | null {
       return { type: 'delta', text: String(data.text ?? '') }
     case 'tool':
       return { type: 'tool', name: String(data.name ?? '') }
-    case 'evidence':
+    case 'evidence': {
+      // Backend: snake_case, amounts as numbers (mocks: camelCase strings)
+      const figures = data.figures as { label: string; amount: number | string }[] | undefined
       return {
         type: 'evidence',
         evidence: {
-          transactionIds: (data.transactionIds as string[]) ?? [],
-          figures: data.figures as { label: string; amount: string }[] | undefined,
+          transactionIds: ((data.transaction_ids ?? data.transactionIds) as string[]) ?? [],
+          figures: figures?.map((f) => ({ label: f.label, amount: typeof f.amount === 'number' ? f.amount.toFixed(2) : f.amount })),
         },
       }
+    }
     case 'done':
-      return { type: 'done', factCheck: (data.factCheck as 'passed' | 'failed' | 'fallback') ?? 'passed' }
+      return {
+        type: 'done',
+        factCheck: ((data.fact_check ?? data.factCheck) as 'passed' | 'failed' | 'fallback') ?? 'passed',
+        conversationId: data.conversation_id as string | undefined,
+        fallback: data.fallback as boolean | undefined,
+      }
     case 'error':
       return { type: 'error', message: String(data.message ?? 'Unknown error') }
     default:

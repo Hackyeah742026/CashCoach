@@ -1,6 +1,6 @@
 import { useTransactionsByIds } from '../../hooks/useTransactions'
 import { useLanguage, useT } from '../../i18n/context'
-import { CATEGORY_META } from '../../lib/categories'
+import { categoryMeta } from '../../lib/categories'
 import { formatDate } from '../../lib/format'
 import { AiBadge } from './AiText'
 import type { EvidenceRequest } from './evidenceContext'
@@ -68,7 +68,7 @@ export function EvidenceDrawer({ request, onClose }: EvidenceDrawerProps) {
               {data.items.map((tx) => (
                 <li key={tx.id} className="tx-row">
                   <span className="tx-row__emoji" aria-hidden>
-                    {CATEGORY_META[tx.category].emoji}
+                    {categoryMeta(tx.category).emoji}
                   </span>
                   <div className="tx-row__main">
                     <div className="tx-row__merchant">{tx.merchant}</div>

@@ -25,7 +25,7 @@ public static class SampleCsvWriter
     public static IReadOnlyList<string> WriteAll(string samplesDirectory)
     {
         var paths = new List<string>();
-        foreach (var persona in Enum.GetValues<Persona>())
+        foreach (var persona in SyntheticPersonas.All.Select(p => p.Persona))
         {
             var path = Path.Combine(samplesDirectory, FileName(persona));
             File.WriteAllText(path, SyntheticDataGenerator.GenerateCsv(persona));

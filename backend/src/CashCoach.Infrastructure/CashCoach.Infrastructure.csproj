@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Categorization\merchants.json" LogicalName="CashCoach.Infrastructure.Categorization.merchants.json" />
+    <EmbeddedResource Include="Ai\Prompts\*.md" LogicalName="CashCoach.Infrastructure.Ai.Prompts.%(Filename).md" />
   </ItemGroup>
 
   <PropertyGroup>

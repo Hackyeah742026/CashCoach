@@ -14,6 +14,7 @@ Read `docs/ARCHITECTURE.md` and `docs/API.md` before changing anything that cros
 - The product's AI is **Google Gemini**, called from the backend only via the official `Google.GenAI` .NET SDK. The frontend never talks to Gemini and never sees a key.
 - The key is **`GEMINI_API_KEY`**, stored in **`.env` at the repo root** (gitignored). `.env.example` is the committed template with the variable names:
   - `GEMINI_API_KEY`: required
+  - `GEMINI_MODEL`: optional model override (default `gemini-3.5-flash-lite`)
   - `GEMINI_PROJECT_ID`, `GEMINI_PROJECT_NAME`, `GEMINI_KEY_NAME`: optional, informational
   - `VITE_API_URL`: frontend → backend base URL
 - The backend loads `.env` with `DotNetEnv` at startup and reads values through `IConfiguration`. In deployment, the same names are real env vars.

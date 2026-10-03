@@ -28,10 +28,11 @@ public sealed record TransactionDto(
 }
 
 /// <param name="Total">Number of transactions matching the filter (not a money sum).</param>
-public sealed record TransactionListResponse(int Total, IReadOnlyList<TransactionDto> Items)
+/// <param name="Sum">Signed złoty sum of all matching transactions (before paging).</param>
+public sealed record TransactionListResponse(int Total, decimal Sum, IReadOnlyList<TransactionDto> Items)
 {
     public static TransactionListResponse From(TransactionPage page) =>
-        new(page.Total, page.Items.Select(TransactionDto.From).ToList());
+        new(page.Total, Money.ToZloty(page.SumGr), page.Items.Select(TransactionDto.From).ToList());
 }
 
 public sealed record UpdateTransactionCategoryRequest(string? Category, bool? ApplyToMerchant);

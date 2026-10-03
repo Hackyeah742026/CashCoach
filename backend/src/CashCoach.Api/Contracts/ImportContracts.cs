@@ -26,3 +26,6 @@ public sealed record ImportResponse(
         new ImportRecurringFound(result.Recurring.Subscriptions, result.Recurring.Bnpl, result.Recurring.SalaryDay),
         result.Period is null ? null : PeriodDto.Of(result.Period));
 }
+
+/// <param name="Persona"><c>student</c>, <c>first_job</c> or <c>bnpl_heavy</c> (default).</param>
+public sealed record DemoImportRequest(string? Persona);

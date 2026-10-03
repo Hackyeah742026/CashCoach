@@ -17,7 +17,20 @@ public class UserEndpointTests
 
         var profile = await factory.CreateClient().LoginAsync("first_job");
 
-        profile.Should().Be(new UserProfileResponse(DemoPersonas.IdOf(Persona.FirstJob), "Kuba", Persona.FirstJob, "pl", false, true));
+        profile.Should().BeEquivalentTo(new
+        {
+            UserId = DemoPersonas.IdOf(Persona.FirstJob),
+            Name = "Kuba",
+            Persona = Persona.FirstJob,
+            Language = "pl",
+            HasConsent = false,
+            HasData = true,
+            Payday = 28,
+            Balance = 6100.00m,
+            BalanceIsEstimate = false,
+            AsOf = new DateOnly(2026, 9, 30),
+            AvailableMonths = new[] { "2026-07", "2026-08", "2026-09" },
+        });
         var count = await factory.WithDbAsync(db => db.Transactions.CountAsync(t => t.UserId == profile.UserId));
         count.Should().BeInRange(150, 250);
     }
@@ -69,8 +82,15 @@ public class UserEndpointTests
         var updated = await (await client.PatchJsonAsync("/api/me", new { language = "en", name = "Aleksandra" })).ReadAsync<UserProfileResponse>();
 
         me.Name.Should().Be("Ola");
-        updated.Should().Be(me with { Name = "Aleksandra", Language = "en" });
+        updated.Should().BeEquivalentTo(me with { Name = "Aleksandra", Language = "en" });
         (await client.PatchJsonAsync("/api/me", new { language = "de" })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var settings = await (await client.PatchJsonAsync("/api/me", new { payday = 12, safety_buffer = 150.50m, balance = 999.99m })).ReadAsync<UserProfileResponse>();
+        settings.Payday.Should().Be(12);
+        settings.SafetyBuffer.Should().Be(150.50m);
+        settings.Balance.Should().Be(999.99m);
+        (await client.PatchJsonAsync("/api/me", new { payday = 32 })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await client.PatchJsonAsync("/api/me", new { safety_buffer = 1.005m })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

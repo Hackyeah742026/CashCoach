@@ -1,6 +1,8 @@
 using CashCoach.Api.Contracts;
 using CashCoach.Api.Users;
+using CashCoach.Core.Domain;
 using CashCoach.Infrastructure.Import;
+using CashCoach.Infrastructure.Users;
 using static CashCoach.Api.Endpoints.RequestValidation;
 
 namespace CashCoach.Api.Endpoints;
@@ -37,6 +39,20 @@ public static class ImportEndpoints
             // Authentication is the X-User-Id header, not a cookie, so there is no cross-site form post to protect against.
             .DisableAntiforgery()
             .WithName("ImportTransactions")
+            .WithTags("Transactions");
+
+        // "Try it with demo data": loads a persona's synthetic history into the current user.
+        api.MapPost("/import/demo", async (DemoImportRequest? request, CurrentUser currentUser, DemoLoginService demo, CancellationToken cancellationToken) =>
+            {
+                var persona = request?.Persona is null ? Persona.BnplHeavy : ParseEnum<Persona>(request.Persona, "persona");
+                if (persona == Persona.Custom)
+                {
+                    throw BadRequest("invalid_persona", "'persona' must be one of: student, first_job, bnpl_heavy.");
+                }
+
+                return TypedResults.Ok(ImportResponse.From(await demo.ImportDemoAsync(currentUser.Id, persona, cancellationToken)));
+            })
+            .WithName("ImportDemoData")
             .WithTags("Transactions");
 
         return api;

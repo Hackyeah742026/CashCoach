@@ -35,7 +35,8 @@ public static class InsightEndpoints
                 var stillUsing = request.StillUsing ?? throw BadRequest("invalid_still_using", "'still_using' is required.");
                 var subscription = await insights.SetStillUsingAsync(currentUser.Id, id, stillUsing, cancellationToken)
                     ?? throw NotFound("subscription_not_found", "Subscription not found.");
-                return TypedResults.Ok(new UpdateSubscriptionResponse(subscription.Id, subscription.UserConfirmed, null));
+                return TypedResults.Ok(new UpdateSubscriptionResponse(
+                    subscription.Id, subscription.UserConfirmed, stillUsing ? null : $"unused_subscription:{subscription.Id}"));
             })
             .WithName("UpdateSubscription")
             .WithTags("Insights");

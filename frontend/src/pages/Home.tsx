@@ -101,7 +101,7 @@ export function Home() {
                 increaseIsBad
                 hint={t.home.vsLastMonth}
               />
-              <StatTile label={t.home.saved} value={summary.data.saved} icon={Wallet} />
+              <StatTile label={t.home.saved} value={summary.data.saved} icon={Wallet} absolute={false} />
               <StatTile
                 label={t.home.savingsFound}
                 value={savings.data?.totalPotential ?? '0'}

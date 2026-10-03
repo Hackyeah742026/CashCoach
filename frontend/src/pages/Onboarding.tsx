@@ -10,6 +10,7 @@ import { useChangeLanguage, useImportTransactions, useSettings, useUpdateSetting
 import { useLanguage, useT } from '../i18n/context'
 import { inputToMoney, moneyToInput } from '../lib/format'
 import { Brand } from '../layout/AppShell'
+import type { DemoPersona } from '../api/client'
 import type { ImportResult, Language } from '../types'
 import '../layout/layout.css'
 
@@ -154,14 +155,15 @@ function UploadStep({ onDone }: { onDone: (result: ImportResult) => void }) {
   const importer = useImportTransactions()
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [persona, setPersona] = useState<DemoPersona>('bnpl_heavy')
 
   function pick(f: File | null) {
     setFile(f)
     setFileError(f && !f.name.toLowerCase().endsWith('.csv') ? t.onboarding.invalidFile : null)
   }
 
-  function run(f: File | null) {
-    importer.mutate(f, { onSuccess: onDone })
+  function run(source: File | DemoPersona) {
+    importer.mutate(source, { onSuccess: onDone })
   }
 
   if (importer.isPending) {
@@ -181,11 +183,22 @@ function UploadStep({ onDone }: { onDone: (result: ImportResult) => void }) {
       <p className="privacy-note">
         <ShieldCheck aria-hidden /> {t.onboarding.privacy}
       </p>
+      <div className="field">
+        <span className="text-sm" style={{ fontWeight: 'var(--weight-medium)' }}>
+          {t.onboarding.demoPersona}
+        </span>
+        <Segmented<DemoPersona>
+          label={t.onboarding.demoPersona}
+          value={persona}
+          onChange={setPersona}
+          options={(['student', 'first_job', 'bnpl_heavy'] as const).map((p) => ({ value: p, label: t.onboarding.personas[p] }))}
+        />
+      </div>
       <div className="actions">
-        <button type="button" className="btn btn--ghost" onClick={() => run(null)}>
+        <button type="button" className="btn btn--ghost" onClick={() => run(persona)}>
           <Sparkles size={18} aria-hidden /> {t.onboarding.useDemo}
         </button>
-        <button type="button" className="btn btn--primary" disabled={!file || Boolean(fileError)} onClick={() => run(file)}>
+        <button type="button" className="btn btn--primary" disabled={!file || Boolean(fileError)} onClick={() => file && run(file)}>
           {t.onboarding.import} <ArrowRight size={18} aria-hidden />
         </button>
       </div>

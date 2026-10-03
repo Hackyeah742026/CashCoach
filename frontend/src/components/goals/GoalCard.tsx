@@ -40,9 +40,7 @@ export function GoalCard({ goal, onEdit }: { goal: Goal; onEdit: (goal: Goal) =>
           <span className="goal-card__amount">
             <MoneyText value={goal.saved} whole /> <span className="text-muted">/</span> <MoneyText value={goal.target} whole />
           </span>
-          <span className="text-sm text-muted">
-            {t.goals.by(formatDate(goal.deadline, lang, 'long'))}
-          </span>
+          {goal.deadline && <span className="text-sm text-muted">{t.goals.by(formatDate(goal.deadline, lang, 'long'))}</span>}
           {goal.status !== 'done' && (
             <span className="text-sm text-muted">{t.goals.perWeek(formatMoney(goal.requiredPerWeek, lang, { whole: true }))}</span>
           )}

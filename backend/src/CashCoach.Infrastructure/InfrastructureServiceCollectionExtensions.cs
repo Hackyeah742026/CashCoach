@@ -1,5 +1,8 @@
 using CashCoach.Core.Abstractions;
 using CashCoach.Core.Services;
+using CashCoach.Infrastructure.Ai;
+using CashCoach.Infrastructure.Ai.Tools;
+using CashCoach.Infrastructure.Analytics;
 using CashCoach.Infrastructure.Categorization;
 using CashCoach.Infrastructure.Import;
 using CashCoach.Infrastructure.Insights;
@@ -18,7 +21,13 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IMerchantDictionary, JsonMerchantDictionary>();
-        services.AddSingleton<ILlmCategorizer, NoOpLlmCategorizer>();
+        services.AddMemoryCache();
+        services.AddSingleton<ILlmClient, GeminiClient>();
+        services.AddSingleton<ILlmCategorizer, GeminiCategorizer>();
+        services.AddSingleton<AiCopywriter>();
+        services.AddSingleton<WrappedCaptionService>();
+        services.AddScoped<ToolRegistry>();
+        services.AddScoped<ChatAgent>();
         services.AddSingleton<Categorizer>();
 
         services.AddScoped<RecurringSyncService>();
@@ -27,6 +36,13 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<DemoLoginService>();
         services.AddScoped<TransactionService>();
         services.AddScoped<InsightService>();
+        services.AddScoped<UserDataService>();
+
+        services.AddScoped<SnapshotLoader>();
+        services.AddScoped<DismissalService>();
+        services.AddScoped<AnalyticsService>();
+        services.AddScoped<GoalService>();
+        services.AddScoped<ChallengeService>();
 
         return services;
     }

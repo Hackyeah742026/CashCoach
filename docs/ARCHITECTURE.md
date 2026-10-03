@@ -3,96 +3,100 @@
 ## Overview
 
 ```
-┌─────────────────────────┐        ┌──────────────────────────────────────────────┐
-│  Frontend (React + TS)  │  HTTP  │  CashCoach.Api (ASP.NET Core minimal APIs)   │
-│  Onboarding · Dashboard │◄──────►│  /transactions /insights /affordability /chat│
-│  Afford · Chat          │  SSE   └───────────────┬──────────────────────────────┘
-│  EvidenceDrawer         │                        │
-└─────────────────────────┘        ┌───────────────▼──────────────┐
-                                   │  CashCoach.Core (pure C#)    │
-                                   │  Domain + deterministic math │
-                                   │  Categorization rules        │
-                                   │  SpendingAnalysis            │
-                                   │  RecurringPaymentDetector    │
-                                   │  SavingsFinder               │
-                                   │  AffordabilityCalculator     │
-                                   └───────────────▲──────────────┘
-                                                   │ implements abstractions
-                                   ┌───────────────┴──────────────┐
-                                   │  CashCoach.Infrastructure    │
-                                   │  Import: CSV parsers         │
-                                   │  Ai: GeminiCoach + tools     │──► Google Gemini API
-                                   │  Persistence: EF Core/SQLite │
-                                   └──────────────────────────────┘
+┌─────────────────────────┐  HTTP + SSE  ┌──────────────────────────────────────────────────┐
+│  Frontend (React + TS)  │◄────────────►│  CashCoach.Api (ASP.NET Core minimal APIs)       │
+│  Home · Wrapped · Chat  │  X-User-Id   │  /dashboard /forecast /opportunities /simulate/* │
+│  Goals · EvidenceDrawer │              │  /wrapped /goals /challenges /alerts /chat …     │
+└─────────────────────────┘              └───────────────┬──────────────────────────────────┘
+                                                         │
+                                         ┌───────────────▼──────────────────┐
+                                         │  CashCoach.Core (pure C#, no I/O)│
+                                         │  Domain · Services (import math) │
+                                         │  Analytics (forecast, savings,   │
+                                         │   simulations, goals, wrapped,   │
+                                         │   alerts, challenges, templates) │
+                                         │  Ai (NumberValidator, Anonymizer)│
+                                         │  Abstractions (ILlmClient, …)    │
+                                         └───────────────▲──────────────────┘
+                                                         │ implements
+                                         ┌───────────────┴──────────────────┐
+                                         │  CashCoach.Infrastructure        │
+                                         │  Import (CSV) · Categorization   │
+                                         │  Persistence (EF Core + SQLite)  │
+                                         │  Analytics (load snapshot, CRUD) │
+                                         │  Ai: GeminiClient, ChatAgent,    │──► Google Gemini API
+                                         │   ToolRegistry, AiCopywriter,    │    (Google.GenAI SDK)
+                                         │   GeminiCategorizer, Prompts/*.md│
+                                         └──────────────────────────────────┘
 ```
 
-## Components
-
-### Frontend
-Single-page React app, mobile-first. It holds no business logic: it renders what the API computes and streams chat. `EvidenceDrawer` is the shared component that shows the transactions and calculation behind any claim.
+## Projects
 
 ### CashCoach.Api
-Thin HTTP layer: validation, DTO mapping, SSE streaming, CORS, Problem Details. Endpoints delegate to Core services and to `IAiCoach`.
+Endpoints only parse and validate input, call services and map to DTOs (`Contracts/`). Cross-cutting: snake_case JSON, CORS for the Vite origin, `{ error: { code, message } }` errors, `X-User-Id` resolution (`CurrentUserFilter`), a 20 requests/minute per-user rate limit on `/chat`, OpenAPI + Scalar in Development.
 
 ### CashCoach.Core
-The trusted center of the system. Pure C#, no I/O, fully unit-tested.
+The trusted center. Pure, deterministic, unit-tested.
 
-| Service | Responsibility |
+| Area | Types |
 |---|---|
-| `CategorizationService` | Merchant normalization, then a rule dictionary (Biedronka → Groceries, Glovo → Food delivery, …) and user-defined rules. Leaves unknown merchants as `Uncategorized` for the AI step. |
-| `RecurringPaymentDetector` | Finds subscriptions and regular bills: same merchant, similar amount, period of about 7, 14, 30 or 365 days. |
-| `SpendingAnalysisService` | Monthly totals per category, month-over-month deltas, top merchants, anomalies (a category above 1.5× its 3-month average). |
-| `SavingsFinderService` | Produces *candidate* savings with computed monthly impact: unused or duplicate subscriptions, high-frequency small purchases, delivery vs. groceries ratio, BNPL usage. |
-| `AffordabilityCalculator` | `safeToSpend = balance − upcoming recurring until payday − buffer`. Handles one-off and installment purchases and returns a verdict plus a line-by-line breakdown. |
+| Import math | `MerchantNormalizer`, `Categorizer` (dictionary, fuzzy, LLM fallback), `RecurringDetector`, `BnplPlanBuilder`, `SpendingSummaryCalculator`, `SubscriptionOverviewCalculator` |
+| Analytics | `FinancialSnapshot`, `ForecastCalculator`, `OpportunityFinder`, `Simulator`, `GoalCalculator`/`GoalPlanner`, `WrappedBuilder`, `AlertBuilder`, `ChallengeTracker`, `CoachTexts` (PL/EN templates) |
+| AI safety | `NumberValidator` (every number in AI text must match a computed fact), `Anonymizer` (account numbers, cards, phones, e-mails) |
+| Abstractions | `ILlmClient`, `ILlmCategorizer`, `IMerchantDictionary` |
 
 ### CashCoach.Infrastructure
-- **Import:** `BankFormatDetector` sniffs headers and encoding and picks a parser. `CsvTransactionParser` handles Polish number and date formats. Output is a list of `Transaction`.
-- **Ai:** `GeminiClient` wraps the `Google.GenAI` SDK (model, temperature, streaming, error handling). `GeminiCoach` implements `IAiCoach`: categorize, explain, find savings, affordability narrative, chat. Prompts are `.md` files and tools are classes in `Tools/`. See [AI_PIPELINE.md](AI_PIPELINE.md).
-- **Persistence:** EF Core + SQLite (single file, zero setup). Stores transactions, user category rules, settings (payday, buffer, language) and dismissed suggestions.
+- **Import:** `CsvTransactionReader` (`;`, decimal comma or dot) → `TransactionImportService` (normalize, categorize, user rules, recurring sync, payday detection).
+- **Persistence:** `AppDbContext` on SQLite.
+- **Analytics:** `SnapshotLoader` (one read per request), `AnalyticsService` (dismissals applied), `GoalService`, `ChallengeService`, `DismissalService`, `UserDataService` (export, delete).
+- **Ai:** see [AI_PIPELINE.md](AI_PIPELINE.md).
+- **SyntheticData:** fixed-seed Bogus generator for the three demo personas (`data/samples/`).
 
 ## Key flows
 
-### 1. Import
+### Demo login and import
 ```
-CSV upload → BankFormatDetector → CsvTransactionParser → Transactions
-  → CategorizationService (rules)            ~80–90% categorized
-  → GeminiCoach.Categorize(unknown merchants) structured output + confidence
-  → RecurringPaymentDetector
-  → save → return ImportResult (counts, uncategorized left, date range)
-```
-
-### 2. Monthly insight
-```
-SpendingAnalysisService → computed facts (JSON, each with a stable key)
-  → GeminiCoach.ExplainSpending(facts) → narrative + evidence keys
-  → FactChecker: every amount in the narrative must match a fact key (±0.01)
-  → InsightDto
+POST /demo/login → create persona user (fixed id, demo balance)
+  → synthetic CSV → TransactionImportService
+      normalize → dictionary / fuzzy → Gemini for unknown merchants (not transfer titles) → other
+      → user rules → save → RecurringSyncService → payday from salary
 ```
 
-### 3. "Can I afford this?"
+### Dashboard
 ```
-AffordabilityRequest (item, price, date, installments?)
-  → AffordabilityCalculator → verdict + breakdown + assumptions (deterministic)
-  → GeminiCoach.ExplainAffordability(result) → short explanation + 1–3 tips
-  → AffordabilityResponse (the verdict always comes from the calculator)
+SnapshotLoader → ForecastCalculator, OpportunityFinder (− dismissed), AlertBuilder, WrappedBuilder (month totals),
+GoalCalculator, SubscriptionOverviewCalculator, BnplPlanBuilder → DashboardResponse (templates only, no model call)
 ```
 
-### 4. Chat
-Gemini with function calling (`GetTransactions`, `GetCategorySummary`, `CalculateAffordability`), streamed over SSE. Tool results are attached to the reply as evidence.
+### Wrapped and opportunities
+```
+WrappedBuilder / OpportunityFinder (numbers) → template captions (CoachTexts)
+  → AiCopywriter: Gemini rewrites, NumberValidator checks each text, failures keep the template
+  → cached per user, month/version and language
+```
+
+### Chat
+```
+POST /chat → ChatAgent: history (last 10) + scrubbed question → Gemini with 10 tools
+  → tool calls run Core code for this user (max 5 rounds) → facts collected
+  → NumberValidator: passed → answer; failed → retry with a correction (max 2) → template fallback
+  → stored with facts → JSON or SSE (tool, delta, evidence, done)
+```
 
 ## Technical decisions
 
 | Decision | Why |
 |---|---|
-| **AI explains, code calculates** | LLMs are unreliable at arithmetic. Deterministic math makes the outputs verifiable and testable, which answers the brief's "how can users verify outputs?" question. |
-| Rules first, AI for the long tail | Cheaper, faster and deterministic for known merchants. AI only handles what the rules miss, and user corrections become new rules. |
-| CSV import, not open banking | No PSD2 licence is needed for a hackathon, and it's privacy-friendly. Open banking (e.g. via an AIS provider) is the natural next step. |
-| SQLite | Zero setup and a single file, so the demo is portable. |
-| Clean layering (Core has no dependencies) | Finance logic is unit-testable and the AI provider is swappable behind `IAiCoach`. |
-| Gemini via the official `Google.GenAI` .NET SDK | Function calling, JSON outputs and streaming are first-class. Strong multilingual quality (Polish). |
+| **AI explains, code calculates** | LLMs are unreliable at arithmetic. Deterministic math is verifiable and testable; the validator enforces it at runtime. |
+| "Today" = latest transaction date | Imported histories are analysed as of their end, and the demo tells the same story every day. |
+| Templates first, AI on top | Every screen works without a key or when Gemini is down or over quota; AI only rephrases verified facts. |
+| Rules first, AI for the long tail | Dictionary and fuzzy match are cheap and deterministic. User corrections become rules. |
+| CSV import, not open banking | No PSD2 licence needed; privacy-friendly. |
+| SQLite, `EnsureCreated` + schema version | Zero setup, portable demo. |
+| Gemini via the official `Google.GenAI` SDK | Function calling and JSON mode; strong Polish. Model configurable with `GEMINI_MODEL` (default `gemini-3.5-flash-lite`). |
 | Anonymize before AI | GDPR/RODO: only merchant, category, amount and date leave the server. |
 
 ## Deployment (demo)
-- Backend: a single container or `dotnet run`. SQLite file in a volume.
-- Frontend: static build served by the API (`wwwroot`) or any static host.
-- Secrets: `GEMINI_API_KEY` via env var (root `.env` locally).
+- Backend: `dotnet run --project src/CashCoach.Api` (port 5080) or a container with the SQLite file in a volume.
+- Frontend: static build on any static host, `VITE_API_URL` pointing at the API.
+- Secrets: `GEMINI_API_KEY` (and optional `GEMINI_MODEL`) via env vars; root `.env` locally.
