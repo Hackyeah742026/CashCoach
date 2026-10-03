@@ -8,12 +8,12 @@ All code, prompts, designs and documents in this repository were created during 
 ## AI used inside the product
 | Resource | Purpose | License / Terms |
 |---|---|---|
-| Anthropic Claude API, model `claude-opus-5-5` | Transaction categorization (long tail), spending explanations, savings phrasing and ranking, affordability explanation, chat coach with tool use | Anthropic Commercial Terms |
+| Google Gemini API (via `Google.GenAI` SDK) | Transaction categorization (long tail), spending explanations, savings phrasing and ranking, affordability explanation, chat coach with function calling | Google Gemini API Additional Terms of Service |
 
 ## AI tools used during development
 | Tool | How we used it |
 |---|---|
-| Claude Code (Anthropic) | Project scaffolding, documentation drafts, code assistance, debugging, code review |
+| Claude Code (Anthropic), development tool only, not part of the product (the product AI is Google Gemini) | Project scaffolding, documentation drafts, code assistance, debugging, code review |
 | _add others (e.g. Copilot, v0, ChatGPT) if used_ | |
 
 The team reviewed all AI-assisted code and can explain and defend every part of the solution.
@@ -24,9 +24,18 @@ The team reviewed all AI-assisted code and can explain and defend every part of 
 |---|---|---|
 | .NET / ASP.NET Core | Web API | MIT |
 | Entity Framework Core + SQLite provider | Persistence | MIT |
-| `Anthropic` (official C# SDK) | Claude API client | MIT |
-| xUnit | Tests | Apache-2.0 |
-| _add as installed (e.g. CsvHelper)_ | | |
+| `Google.GenAI` 1.24.0 (official .NET SDK) | Gemini API client | Apache-2.0 |
+| `Microsoft.EntityFrameworkCore.Sqlite` 9.0.20 | SQLite provider for EF Core | MIT |
+| `Microsoft.AspNetCore.OpenApi` 9.0.20 | OpenAPI document generation | MIT |
+| `Scalar.AspNetCore` 2.17.13 | API reference UI at `/scalar/v1` | MIT |
+| `DotNetEnv` 3.2.0 | Loads `.env` at startup | MIT |
+| `FuzzySharp` 2.0.2 | Fuzzy merchant matching | MIT |
+| `CsvHelper` 33.1.0 | Bank CSV parsing | MS-PL / Apache-2.0 |
+| `Bogus` 35.6.5 | Synthetic demo data generation | MIT |
+| xUnit 2.9.2 | Tests | Apache-2.0 |
+| `FluentAssertions` 7.2.2 | Test assertions | Apache-2.0 |
+| `Microsoft.AspNetCore.Mvc.Testing` 9.0.20 | API integration tests | MIT |
+| `Microsoft.NET.Test.Sdk` 17.12.0, `xunit.runner.visualstudio` 2.8.2, `coverlet.collector` 6.0.2 | Test runner and coverage | MIT / Apache-2.0 |
 
 ### Frontend
 | Library | Purpose | License |

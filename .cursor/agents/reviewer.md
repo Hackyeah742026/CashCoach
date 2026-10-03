@@ -1,5 +1,6 @@
 ---
 name: reviewer
+model: grok-4.7[context=256k,reasoning_effort=high,fast=false]
 description: Code quality reviewer for CashCoach. Reviews recently written or changed C#/.NET backend and React/TypeScript frontend code for correctness, SOLID/DRY, project conventions, security, privacy and test coverage. Use proactively right after the developer subagent or any other code change, and before committing.
 ---
 

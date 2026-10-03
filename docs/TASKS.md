@@ -5,7 +5,7 @@ P0 = needed for the demo · P1 = makes it shine · P2 = only if time allows.
 ## Setup
 - [ ] P0 `dotnet new` solution and projects (Api, Core, Infrastructure, Tests) + references
 - [ ] P0 `npm create vite` (react-ts) in `frontend/`, add Tailwind, Router, TanStack Query, Recharts
-- [ ] P0 `.env.example` → `.env`, config binding for `Anthropic:ApiKey` / `Anthropic:Model`
+- [ ] P0 `.env.example` → `.env`, `GEMINI_API_KEY` loaded with `DotNetEnv`, `Gemini:Model` config
 - [ ] P0 CORS + `/api/health`
 - [ ] P0 Extend `.gitignore` for `dist/`, `*.db`, `.env.local`
 
@@ -27,7 +27,7 @@ P0 = needed for the demo · P1 = makes it shine · P2 = only if time allows.
 - [ ] P0 `CsvTransactionParser` for mBank (`;`, decimal comma, Windows-1250, header offset)
 - [ ] P1 PKO BP parser + `BankFormatDetector`
 - [ ] P0 SQLite `AppDbContext` + repository
-- [ ] P0 `ClaudeClient` (SDK wrapper, config, error handling, stop_reason checks)
+- [ ] P0 `GeminiClient` (`Google.GenAI` wrapper, config, error handling, finish reason checks)
 - [ ] P0 Anonymizer
 - [ ] P0 AI categorization (structured output)
 - [ ] P0 AI spending explanation + fact-checker

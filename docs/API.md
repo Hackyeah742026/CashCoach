@@ -1,155 +1,144 @@
 # API Contract
 
-Base URL: `http://localhost:5080/api` · JSON · errors use RFC 7807 Problem Details.
+Base URL: `http://localhost:5080/api` · JSON with `snake_case` property names and enum values.
 
-**Money format:** amounts are **decimal strings** in PLN (`"-412.30"`). Expenses are negative, income positive. Dates use ISO `YYYY-MM-DD`.
+**Errors:** `{ "error": { "code": "…", "message": "…" } }` with a matching HTTP status. Unexpected failures return `500` with code `internal_error`.
 
-Keep this file in sync with `backend/src/CashCoach.Api/Contracts/` and `frontend/src/types/index.ts`.
+**User:** endpoints below `GET /health` and `POST /demo/login` require the `X-User-Id` header (user GUID). Missing header: `401 missing_user_id`. Not a GUID: `400 invalid_user_id`. Unknown user: `404 user_not_found`.
 
----
+**Money:** amounts are JSON **numbers** in złoty with 2 decimals (`-11.00`). Stored as integer grosze. Expenses are negative, income positive. Dates are ISO `YYYY-MM-DD`.
+
+Forecast, savings opportunities, wrapped, goals and chat are not part of this contract yet.
 
 ## Health
-`GET /health` returns `200 { "status": "ok", "ai": "ok" | "degraded" }`
+`GET /health` → `200 { "status": "ok" }`. No `X-User-Id`.
 
-## Settings
-`GET /settings` · `PUT /settings`
+## Demo login
+`POST /demo/login` · no `X-User-Id`. Body `{ "persona": "student" | "first_job" | "bnpl_heavy" }`.
+
+Creates or reuses the demo user (Ola, Kuba, Maja) and imports that persona's synthetic CSV once.
 ```json
-{ "language": "pl", "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1840.55" }
+{ "user_id": "…", "name": "Ola", "persona": "student", "language": "pl", "has_consent": false, "has_data": true }
+```
+
+## Profile
+`GET /me` returns the same shape as demo login.
+
+`PATCH /me` body `{ "name": "Aleksandra", "language": "en" }`. Either field may be omitted. Language is `pl` or `en`.
+
+`POST /me/consent` body `{ "accepted": true, "scopes": ["transactions", "ai_coach"] }`. `accepted: false` is `400`.
+```json
+{ "consent_at": "2026-10-03T12:00:00+00:00", "scopes": ["transactions", "ai_coach"] }
+```
+
+## Import
+`POST /import` multipart field `file`. CSV header `date;amount;description;currency`, `;` delimiter, decimal comma or dot. Duplicate rows (same user, date, amount and raw description) are skipped.
+```json
+{
+  "imported": 214,
+  "skipped_duplicates": 3,
+  "categorized": { "dictionary": 171, "fuzzy": 22, "llm": 18, "other": 3 },
+  "recurring_found": { "subscriptions": 5, "bnpl": 2, "salary_day": 28 },
+  "period": { "from": "2026-07-01", "to": "2026-09-30" }
+}
 ```
 
 ## Transactions
+`GET /transactions?from=&to=&category=&q=&limit=50&offset=0`
 
-### `POST /transactions/import`
-`multipart/form-data`, field `file` (CSV). Optional `bank` (`mbank` | `pko`); it's auto-detected when omitted.
+`total` is the filtered row count, not a money sum. `q` matches merchant or raw description.
 ```json
 {
-  "importId": "b1c2…",
-  "bank": "mbank",
-  "imported": 312,
-  "duplicatesSkipped": 0,
-  "categorizedByRules": 271,
-  "categorizedByAi": 37,
-  "needsReview": 4,
-  "from": "2026-06-01",
-  "to": "2026-08-31",
-  "detectedBalance": "1840.55"
-}
-```
-
-### `GET /transactions?from=&to=&category=&merchant=&needsReview=`
-```json
-{
+  "total": 12,
   "items": [
     {
-      "id": "t_0192",
+      "id": "…",
       "date": "2026-08-14",
-      "amount": "-38.90",
+      "amount": -38.90,
       "merchant": "Glovo",
-      "description": "GLOVO*ZAMOWIENIE KRAKOW",
       "category": "food_delivery",
-      "categorySource": "rule",
-      "confidence": 1.0,
-      "isRecurring": false
+      "raw_description": "GLOVO*ORDER 123 KRAKOW",
+      "channel": "card",
+      "is_recurring": false,
+      "is_bnpl": false
     }
-  ],
-  "total": "-412.30",
-  "count": 14
+  ]
 }
 ```
 
-### `PATCH /transactions/{id}/category`
+`PATCH /transactions/{id}` body `{ "category": "restaurants", "apply_to_merchant": true }`.
 ```json
-{ "category": "groceries", "applyToMerchant": true }
+{ "id": "…", "category": "restaurants", "updated_count": 6 }
 ```
-If `applyToMerchant` is true, a user rule is created and all transactions from that merchant are re-categorized. Returns the updated count.
+Unknown id: `404 transaction_not_found`. Unknown category: `400 invalid_category`.
 
-## Insights
+## Summary
+`GET /summary?period=this_month|last_month|last_3_months`
 
-### `GET /insights/summary?month=2026-08`
+Periods are calendar months relative to the user's latest transaction. `total_spent` is the positive magnitude of expenses. `share` is a fraction of that total. `vs_prev_pct` is the percent change against the previous period of the same length, or `null` when nothing was spent then.
 ```json
 {
-  "month": "2026-08",
-  "income": "3200.00",
-  "expenses": "-2875.40",
-  "byCategory": [{ "category": "food_delivery", "amount": "-412.30", "changePct": 34.0 }],
-  "recurring": [{ "merchant": "Spotify", "amount": "-23.99", "period": "monthly", "nextDate": "2026-09-05" }],
-  "narrative": {
-    "headline": "Sierpień: wydałaś/eś 2 875 zł, o 9% więcej niż w lipcu.",
-    "bullets": [
-      { "text": "Dostawy jedzenia: 412,30 zł (14 zamówień).", "factKeys": ["cat.food_delivery.month"], "transactionIds": ["t_0192", "…"] }
-    ],
-    "aiGenerated": true,
-    "factCheck": "passed"
-  }
-}
-```
-
-### `GET /insights/savings?month=2026-08`
-```json
-{
-  "suggestions": [
+  "period": { "from": "2026-09-01", "to": "2026-09-30" },
+  "total_spent": 2875.40,
+  "categories": [
     {
-      "id": "s_delivery",
-      "title": "Gotuj 2× w tygodniu zamiast Glovo",
-      "rationale": "…",
-      "monthlyImpact": "160.00",
-      "difficulty": "medium",
-      "evidence": { "transactionIds": ["t_0192", "…"], "calculation": "14 orders × 29.45 avg − 8 × groceries 9.50" }
+      "category": "food_delivery",
+      "amount": 412.30,
+      "count": 14,
+      "share": 0.1434,
+      "vs_prev_pct": 34.0,
+      "top_merchants": [{ "merchant": "Glovo", "amount": 280.00, "count": 9 }]
+    }
+  ]
+}
+```
+
+## Subscriptions
+`GET /subscriptions`
+```json
+{
+  "monthly_total": 84.97,
+  "items": [
+    {
+      "id": "…",
+      "merchant": "Spotify",
+      "amount": 23.99,
+      "next_date": "2026-10-06",
+      "group": "music",
+      "duplicate": true,
+      "user_confirmed": null
+    }
+  ]
+}
+```
+`group` is `music`, `video` or `null`. `duplicate` is true when another active subscription is in the same group. `user_confirmed` stays `null` until the user answers.
+
+`PATCH /subscriptions/{id}` body `{ "still_using": false }`.
+```json
+{ "id": "…", "user_confirmed": false, "new_opportunity_id": null }
+```
+`new_opportunity_id` stays `null` until savings opportunities exist. Unknown id: `404 subscription_not_found`.
+
+## BNPL
+`GET /bnpl`. Amounts are positive. `explainer` is a fixed template, not a model.
+```json
+{
+  "active_plans": 2,
+  "total_remaining": 349.98,
+  "items": [
+    {
+      "provider": "Klarna",
+      "merchant": "Zalando",
+      "instalment": 99.99,
+      "paid": 2,
+      "total": 4,
+      "remaining": 199.98,
+      "next_date": "2026-10-15"
     }
   ],
-  "totalPotential": "310.00"
+  "explainer": "Masz 2 aktywne plany…"
 }
 ```
 
-### `POST /insights/savings/{id}/dismiss`
-Returns `204`. The suggestion is hidden from future lists.
-
-## Affordability
-
-### `POST /affordability`
-```json
-{
-  "item": "Bilety na koncert + pociąg do Gdańska",
-  "price": "1200.00",
-  "date": "2026-09-20",
-  "installments": null,
-  "assumptions": { "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1840.55" }
-}
-```
-`assumptions` is optional and falls back to the settings. `installments`: `{ "count": 3, "monthlyAmount": "400.00" }`.
-
-Response:
-```json
-{
-  "verdict": "yellow",
-  "safeToSpend": "940.55",
-  "shortfall": "259.45",
-  "breakdown": [
-    { "label": "Current balance", "amount": "1840.55" },
-    { "label": "Upcoming bills before payday (rent share, Spotify, phone)", "amount": "-600.00", "transactionIds": ["…"] },
-    { "label": "Safety buffer", "amount": "-300.00" }
-  ],
-  "assumptions": { "payday": 10, "safetyBuffer": "300.00", "currentBalance": "1840.55" },
-  "explanation": { "text": "…", "tips": ["…"], "aiGenerated": true, "factCheck": "passed" }
-}
-```
-Verdict rules (deterministic): `green` if price ≤ safeToSpend · `yellow` if price ≤ safeToSpend + buffer · `red` otherwise.
-
-## Chat
-
-### `POST /chat` (SSE stream)
-Request:
-```json
-{ "messages": [{ "role": "user", "content": "Ile wydałem na Bolta w sierpniu?" }], "language": "pl" }
-```
-Server-sent events:
-```
-event: delta      data: {"text":"W sierpniu "}
-event: tool       data: {"name":"get_transactions","input":{…}}
-event: evidence   data: {"transactionIds":["…"],"figures":[{"label":"Bolt, 08.2026","amount":"-186.00"}]}
-event: done       data: {"factCheck":"passed"}
-event: error      data: {"message":"…"}
-```
-
-## Categories (enum)
-`groceries`, `food_delivery`, `restaurants_cafes`, `transport`, `rent_bills`, `subscriptions`, `shopping`, `health_beauty`, `entertainment`, `education`, `travel`, `transfers_people`, `bnpl`, `cash`, `income_salary`, `income_other`, `savings`, `other`, `uncategorized`
+## Categories
+`groceries`, `food_delivery`, `restaurants`, `transport`, `subscriptions`, `shopping`, `entertainment`, `rent`, `utilities`, `health`, `education`, `bnpl`, `transfers`, `salary`, `other`.
