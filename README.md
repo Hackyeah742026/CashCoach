@@ -67,18 +67,61 @@ Full description: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · AI pipeline:
 
 ## Getting started
 
-### Prerequisites
-- .NET SDK 9+
-- Node.js 20+
-- An Anthropic API key
+### Run with Docker (recommended)
 
-### Configuration
+One command starts the whole app: the API (ASP.NET Core) and the web app (React build served by nginx). You need only [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine with Compose v2.24+. No .NET or Node.js install is required.
+
 ```bash
+# 1. Configure (once)
 cp .env.example .env
-# set ANTHROPIC_API_KEY=...
+#    then set GEMINI_API_KEY=... in .env (get a key at https://aistudio.google.com/apikey)
+
+# 2. Build and start
+docker compose up --build -d
+
+# 3. Open the app
+open http://localhost:8080        # or just visit it in your browser
 ```
 
-### Run the backend
+On the onboarding screen choose **Try it with demo data** (Student, First job or BNPL instalments), or upload a CSV from [`data/samples/`](data/samples/).
+
+| What | Where |
+|---|---|
+| Web app | http://localhost:8080 |
+| API (proxied by nginx) | http://localhost:8080/api, e.g. `/api/health` |
+
+How it fits together: `docker-compose.yml` runs two containers. `web` (built from `frontend/Dockerfile`) serves the app and forwards `/api/*` to `backend` (built from `backend/Dockerfile`), so the browser talks to a single origin and needs no CORS setup. The SQLite database lives in the `cashcoach-data` volume, so your data survives restarts.
+
+Useful commands:
+
+```bash
+docker compose logs -f backend      # follow the API logs
+docker compose ps                   # container status
+docker compose down                 # stop (keeps the database)
+docker compose down -v              # stop and delete the database
+docker compose up --build -d        # rebuild after changing code or .env
+WEB_PORT=3000 docker compose up -d  # use another port if 8080 is taken
+```
+
+Notes:
+- **No Gemini key?** The app still runs. Every AI feature falls back to deterministic template text, and all numbers are computed by code anyway.
+- The key is read from `.env` at container start and never baked into an image. The frontend image contains no secrets.
+- `VITE_*` values in `.env` are not used by Docker: the web image is always built against the backend in the same stack (`/api`, mocks off).
+
+### Run locally without Docker (for development)
+
+#### Prerequisites
+- .NET SDK 9+
+- Node.js 20+
+- A Google Gemini API key (optional; without it, AI text falls back to templates)
+
+#### Configuration
+```bash
+cp .env.example .env
+# set GEMINI_API_KEY=... and VITE_USE_MOCKS=false
+```
+
+#### Run the backend
 ```bash
 cd backend
 dotnet restore
@@ -86,7 +129,7 @@ dotnet run --project src/CashCoach.Api
 # API on http://localhost:5080
 ```
 
-### Run the frontend
+#### Run the frontend
 ```bash
 cd frontend
 npm install
@@ -94,10 +137,10 @@ npm run dev
 # UI on http://localhost:5173
 ```
 
-### Try it
+#### Try it
 Upload [`data/samples/transactions_mbank.csv`](data/samples/) on the onboarding screen. The sample data is synthetic.
 
-### Tests
+#### Tests
 ```bash
 cd backend && dotnet test
 ```

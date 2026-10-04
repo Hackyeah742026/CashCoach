@@ -97,6 +97,7 @@ POST /chat → ChatAgent: history (last 10) + scrubbed question → Gemini with 
 | Anonymize before AI | GDPR/RODO: only merchant, category, amount and date leave the server. |
 
 ## Deployment (demo)
+- Docker (whole stack): `docker compose up --build` at the repo root runs `backend` (`backend/Dockerfile`) and `web` (`frontend/Dockerfile`: Vite build served by nginx on http://localhost:8080). nginx proxies `/api/*` to the backend unbuffered (chat SSE), so the browser uses one origin and the web image is built with `VITE_API_URL=/api`, `VITE_USE_MOCKS=false`. Secrets come from the root `.env` via `env_file`; SQLite is in the `cashcoach-data` volume.
 - Backend: `dotnet run --project src/CashCoach.Api` (port 5080) locally. Deployed as a container from `backend/Dockerfile` on Render (`render.yaml` Blueprint, free plan). It listens on `$PORT` (default 8080), and SQLite lives at `/data/cashcoach.db`, which is ephemeral on the free plan (demo personas re-seed on login).
 - Frontend: Vite static build on Vercel (https://cash-coach-one.vercel.app, root `frontend/`, `vercel.json` rewrites routes to `index.html`). Build env: `VITE_API_URL=https://<backend-host>/api`, `VITE_USE_MOCKS=false`.
 - CORS: `Cors:AllowedOrigins` in `appsettings.json`, overridable with `Cors__AllowedOrigins__0..n` env vars.

@@ -52,6 +52,13 @@ The team reviewed all AI-assisted code and can explain and defend every part of 
 | React Router | Routing | MIT |
 | _add as installed_ | | |
 
+### Containers
+| Image | Purpose | License |
+|---|---|---|
+| `mcr.microsoft.com/dotnet/sdk:9.0`, `mcr.microsoft.com/dotnet/aspnet:9.0` | Build and run the API container | MIT |
+| `node:22-alpine` | Build the frontend inside Docker | MIT |
+| `nginx:1.27-alpine` | Serve the frontend and proxy `/api` to the backend | BSD-2-Clause |
+
 ## Datasets
 | Dataset | Source |
 |---|---|
